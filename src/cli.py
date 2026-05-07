@@ -8,7 +8,7 @@ from pathlib import Path
 from src.config import Settings
 from src.convex_hull.boundaries import boundary_doc_indices_per_cluster
 from src.cross_boundary.boundaries import cross_boundary_hits_for_all_clusters
-from src.documents import load_jsonl
+from src.documents import Datapoint, load_jsonl
 from src.pdf_corpus import pdf_to_datapoints
 from src.centroid_neighbors import nearest_to_centroid
 from src.max_distance_sort.boundaries import boundary_rankings_for_all_clusters
@@ -28,6 +28,15 @@ def _parse_kmeans_n_init(arg: str | None, fallback: int | str) -> int | str:
     if s.isdigit():
         return int(s)
     return s
+
+
+def _doc_id_to_title(datapoints: list[Datapoint]) -> dict[str, str]:
+    """Titles from JSONL meta (e.g. arXiv harvest); empty string if absent."""
+    out: dict[str, str] = {}
+    for d in datapoints:
+        t = d.meta.get("title")
+        out[d.doc_id] = str(t).strip() if t is not None else ""
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -101,6 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     out: dict = {"method": args.method, "n_clusters": args.n_clusters}
+    titles_by_doc = _doc_id_to_title(state.datapoints)
 
     if args.method == "max_distance_sort":
         hits = boundary_rankings_for_all_clusters(
@@ -109,7 +119,15 @@ def main(argv: list[str] | None = None) -> int:
             state.indexed.n_clusters,
             top_n_per_cluster=args.top_n,
         )
-        out["hits"] = [h.__dict__ for h in hits]
+        boundary_by_cluster = [[] for _ in range(state.indexed.n_clusters)]
+        for h in hits:
+            boundary_by_cluster[h.cluster_id].append(
+                {
+                    "title": titles_by_doc.get(h.doc_id, ""),
+                    "abstract": h.body,
+                }
+            )
+        out["boundary_by_cluster"] = boundary_by_cluster
 
     elif args.method == "convex_hull":
         idx_map = boundary_doc_indices_per_cluster(
@@ -117,17 +135,16 @@ def main(argv: list[str] | None = None) -> int:
             state.vectors,
             state.indexed.n_clusters,
         )
-        hits = []
+        boundary_by_cluster = [[] for _ in range(state.indexed.n_clusters)]
         for cid, gidx in idx_map.items():
-            for rank, gi in enumerate(gidx):
+            for gi in gidx:
                 dp = state.datapoints[int(gi)]
-                hits.append({
-                    "cluster_id": int(cid),
-                    "doc_id": dp.doc_id,
-                    "body": dp.body[:500],
-                    "rank_in_cluster": rank,
-                })
-        out["hits"] = hits
+                t = dp.meta.get("title")
+                title = str(t).strip() if t is not None else ""
+                boundary_by_cluster[int(cid)].append(
+                    {"title": title, "abstract": dp.body}
+                )
+        out["boundary_by_cluster"] = boundary_by_cluster
 
     elif args.method == "cross_boundary":
         hits = cross_boundary_hits_for_all_clusters(
@@ -136,7 +153,16 @@ def main(argv: list[str] | None = None) -> int:
             state.indexed.n_clusters,
             k_per_centroid=args.top_n,
         )
-        out["hits"] = [h.__dict__ for h in hits]
+        boundary_by_cluster = [[] for _ in range(state.indexed.n_clusters)]
+        for h in hits:
+            nid = h.neighbor_doc_id
+            boundary_by_cluster[h.source_cluster_id].append(
+                {
+                    "title": titles_by_doc.get(nid, ""),
+                    "abstract": h.neighbor_body,
+                }
+            )
+        out["boundary_by_cluster"] = boundary_by_cluster
 
     elif args.method == "centroid_neighbors":
         clusters_out = []
@@ -152,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
                 "nearest_to_centroid": [
                     {
                         "doc_id": r["doc_id"],
+                        "title": titles_by_doc.get(str(r["doc_id"]), ""),
                         "body": str(r.get("body", ""))[:500],
                         "vector_distance": r.get("vector_distance"),
                     }

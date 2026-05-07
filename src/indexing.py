@@ -24,7 +24,8 @@ def open_index(schema_path_str: str | None, redis_url: str, vector_dim: int) -> 
         schema_path = Path(schema_path_str)
     schema = load_schema_for_dims(schema_path, vector_dim)
     idx = SearchIndex(schema, redis_url=redis_url)
-    idx.connect()
+    # connect() does not use the constructor's redis_url unless passed explicitly
+    idx.connect(redis_url=redis_url)
     return idx
 
 
@@ -41,7 +42,8 @@ def records_for_redis(
                 "doc_id": doc_ids[i],
                 "body": bodies[i],
                 "cluster_id": str(int(cluster_labels[i])),
-                "embedding": embeddings[i].astype(np.float32).tolist(),
+                # redis-py rejects list values in HSET; float32 blob for RediSearch vector
+                "embedding": embeddings[i].astype(np.float32).tobytes(),
             }
         )
     return out
