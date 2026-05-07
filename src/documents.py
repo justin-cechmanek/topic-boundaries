@@ -32,10 +32,22 @@ def datapoint_from_record(rec: dict[str, Any]) -> Datapoint:
     """
     if "abstract" in rec:
         body = str(rec["abstract"])
-        doc_id = str(rec.get("arxive_link") or rec.get("title") or rec.get("doc_id") or "")
+        doc_id = str(
+            rec.get("arxiv_link")
+            or rec.get("arxive_link")
+            or rec.get("title")
+            or rec.get("doc_id")
+            or ""
+        )
     elif "body" in rec:
         body = str(rec["body"])
-        doc_id = str(rec.get("doc_id") or rec.get("id") or rec.get("arxive_link") or "")
+        doc_id = str(
+            rec.get("doc_id")
+            or rec.get("id")
+            or rec.get("arxiv_link")
+            or rec.get("arxive_link")
+            or ""
+        )
     else:
         raise ValueError(
             "Each record needs an 'abstract' or 'body' field for embedding text."

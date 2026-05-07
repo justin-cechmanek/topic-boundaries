@@ -17,7 +17,7 @@ from pathlib import Path
 
 import requests
 
-ARXIV_API = "http://export.arxiv.org/api/query"
+ARXIV_API = "https://export.arxiv.org/api/query"
 NS = {"atom": "http://www.w3.org/2005/Atom"}
 
 
@@ -74,7 +74,7 @@ def harvest(search_query: str, max_results: int, page_size: int = 100) -> list[d
             if len(rows) >= max_results:
                 break
         start += len(entries)
-        time.sleep(3.1)  # arXiv polite pooling guideline (~3s between requests)
+        time.sleep(3.1)  # arXiv polite polling guideline (~3s between requests)
     return rows
 
 

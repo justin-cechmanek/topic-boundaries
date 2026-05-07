@@ -24,5 +24,8 @@ dependencies = [
 dev = ["pytest>=8.0"]
 corpus = ["pypdf>=4.0"]
 
+[project.scripts]
+topic-boundaries = "src.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["src", "src.*"]

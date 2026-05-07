@@ -28,6 +28,8 @@ def run_pipeline(
     schema_path: str | None,
     overwrite_index: bool,
     embed_batch_size: int = 64,
+    kmeans_random_state: int = 42,
+    kmeans_n_init: int | str = "auto",
 ) -> PipelineState:
     # Datapoint.body holds the string passed to the vectorizer (abstract for arXiv JSONL).
     texts = [d.body for d in datapoints]
@@ -44,7 +46,12 @@ def run_pipeline(
         ),
         dtype=np.float32,
     )
-    labels, centroids = cluster_embeddings(vectors, n_clusters)
+    labels, centroids = cluster_embeddings(
+        vectors,
+        n_clusters,
+        random_state=kmeans_random_state,
+        n_init=kmeans_n_init,
+    )
 
     counts = cluster_counts(labels, n_clusters)
     if (counts == 0).any():

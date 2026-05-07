@@ -1,0 +1,5 @@
+redis_url: redis://localhost:6379/0
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+kmeans:
+  random_state: 42
+  n_init: auto

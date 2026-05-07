@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from src.documents import datapoint_from_record, load_jsonl
 
 
@@ -31,8 +33,16 @@ def test_abstract_preferred_when_body_also_present():
 
 
 def test_datapoint_requires_text():
-    try:
+    with pytest.raises(ValueError):
         datapoint_from_record({"doc_id": "x"})
-    except ValueError:
-        return
-    raise AssertionError("expected ValueError")
+
+
+def test_arxiv_link_alias_for_abstract_records():
+    dp = datapoint_from_record(
+        {
+            "abstract": "paper summary",
+            "arxiv_link": "https://arxiv.org/abs/1111.2222",
+        }
+    )
+    assert "1111.2222" in dp.doc_id
+    assert dp.body == "paper summary"

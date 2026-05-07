@@ -7,7 +7,9 @@ from sklearn.cluster import KMeans
 def cluster_embeddings(
     vectors: np.ndarray,
     n_clusters: int,
+    *,
     random_state: int = 42,
+    n_init: int | str = "auto",
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Returns:
@@ -16,7 +18,7 @@ def cluster_embeddings(
     """
     km = KMeans(
         n_clusters=n_clusters,
-        n_init="auto",
+        n_init=n_init,
         random_state=random_state,
     )
     labels = km.fit_predict(vectors)
