@@ -1,0 +1,21 @@
+# Vector dims must match the embedding model (default: all-MiniLM-L6-v2 → 384).
+version: "0.1.0"
+index:
+  name: topic_boundaries
+  prefix: tb
+  key_separator: ":"
+  storage_type: hash
+fields:
+  - name: doc_id
+    type: tag
+  - name: cluster_id
+    type: tag
+  - name: body
+    type: text
+  - name: embedding
+    type: vector
+    attrs:
+      algorithm: hnsw
+      datatype: float32
+      dims: 384
+      distance_metric: cosine

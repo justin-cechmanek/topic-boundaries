@@ -1,0 +1,14 @@
+# Redis Stack (RediSearch + vector indexing) for local runs.
+# Usage: docker compose up -d
+# Then:  REDIS_URL=redis://localhost:6379/0 python find_topics.py ...
+
+services:
+  redis:
+    image: redis/redis-stack-server:7.4.0-v6
+    ports:
+      - "6379:6379"
+    volumes:
+      - topic-boundaries-redis:/data
+
+volumes:
+  topic-boundaries-redis:
