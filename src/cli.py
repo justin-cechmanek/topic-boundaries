@@ -12,6 +12,7 @@ from src.documents import Datapoint, load_jsonl
 from src.pdf_corpus import pdf_to_datapoints
 from src.centroid_neighbors import nearest_to_centroid
 from src.max_distance_sort.boundaries import boundary_rankings_for_all_clusters
+from src.voronoi_boundary.boundaries import boundary_rankings_for_all_clusters as voronoi_boundary_rankings_for_all_clusters
 from src.pipeline import run_pipeline
 
 
@@ -56,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         "convex_hull",
         "cross_boundary",
         "centroid_neighbors",
+        "voronoi_boundary",
     ])
     p.add_argument("--redis-url", default=None, help="Optional override for config redis_url.")
     p.add_argument("--config", type=Path, default=None, help="Optional config.yml path.")
@@ -160,6 +162,27 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "title": titles_by_doc.get(nid, ""),
                     "abstract": h.neighbor_body,
+                }
+            )
+        out["boundary_by_cluster"] = boundary_by_cluster
+
+    elif args.method == "voronoi_boundary":
+        hits = voronoi_boundary_rankings_for_all_clusters(
+            state.datapoints,
+            state.vectors,
+            state.labels,
+            state.centroids,
+            state.indexed.n_clusters,
+            top_n_per_cluster=args.top_n,
+        )
+        boundary_by_cluster = [[] for _ in range(state.indexed.n_clusters)]
+        for h in hits:
+            boundary_by_cluster[h.cluster_id].append(
+                {
+                    "title": titles_by_doc.get(h.doc_id, ""),
+                    "abstract": h.body,
+                    "voronoi_ratio": h.voronoi_ratio,
+                    "nearest_other_cluster_id": h.nearest_other_cluster_id,
                 }
             )
         out["boundary_by_cluster"] = boundary_by_cluster
