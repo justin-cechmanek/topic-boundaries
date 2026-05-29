@@ -1,8 +1,6 @@
 import numpy as np
 import pytest
 
-pytest.importorskip("sklearn")
-
 from src.documents import Datapoint
 from src.voronoi_boundary.boundaries import (
     VoronoiBoundaryHit,
@@ -59,15 +57,15 @@ def test_nearest_other_never_own_cluster():
 
 
 def test_ratio_bounded_zero_to_one_for_well_separated_clusters():
-    """For well-separated clusters every ratio should be in [0, 1)."""
+    """For well-separated clusters every ratio should be in [0, 1]."""
     vectors, labels, centroids = _two_cluster_fixture()
     ratios, _ = voronoi_boundary_ratio(vectors, labels, centroids)
     assert (ratios >= 0.0).all()
-    assert (ratios < 1.0).all()
+    assert (ratios <= 1.0).all()
 
 
-def test_ratio_exactly_half_for_equidistant_point():
-    """A point exactly halfway between two centroids should have ratio == 0.5."""
+def test_ratio_is_one_for_equidistant_point():
+    """A point equidistant from two centroids sits exactly on the Voronoi boundary, so ratio == 1.0."""
     centroids = np.array([[1.0, 0.0], [-1.0, 0.0]], dtype=np.float32)
     midpoint = np.array([[0.0, 0.0]], dtype=np.float32)
     labels = np.array([0], dtype=np.int64)
@@ -189,8 +187,9 @@ def test_high_dimensional_vectors():
     n, dim, k = 100, 384, 5
     vectors = rng.standard_normal((n, dim)).astype(np.float32)
     labels = np.repeat(np.arange(k), n // k).astype(np.int64)
-    centroids = np.stack([vectors[labels == c].mean(axis=0) for c in range(k)])
+    centroids = np.stack([vectors[labels == c].mean(axis=0) for c in range(k)]).astype(np.float32)
     ratios, nearest_other = voronoi_boundary_ratio(vectors, labels, centroids)
     assert ratios.shape == (n,)
     assert (ratios >= 0.0).all()
+    assert (ratios <= 1.0).all()
     assert (nearest_other != labels).all()

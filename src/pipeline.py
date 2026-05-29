@@ -18,7 +18,7 @@ def embed_and_cluster_datapoints(
     embed_batch_size: int = 64,
     kmeans_random_state: int = 42,
     kmeans_n_init: int | str = "auto",
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
     """Embed texts and run KMeans without touching Redis (for analysis / visualization)."""
     texts = [d.body for d in datapoints]
     vectorizer = HFTextVectorizer(model=embedding_model)
@@ -65,7 +65,6 @@ def run_pipeline(
     kmeans_n_init: int | str = "auto",
 ) -> PipelineState:
     ids = [d.doc_id for d in datapoints]
-    texts = [d.body for d in datapoints]
     vectors, labels, centroids, vector_dim = embed_and_cluster_datapoints(
         datapoints,
         n_clusters=n_clusters,
@@ -82,7 +81,7 @@ def run_pipeline(
         )
 
     index = open_index(schema_path, redis_url, vector_dim)
-    records = records_for_redis(ids, texts, vectors, labels)
+    records = records_for_redis(ids, [d.body for d in datapoints], vectors, labels)
     create_and_load(
         index,
         records,

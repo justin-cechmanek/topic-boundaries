@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from src.documents import Datapoint
+
 
 @dataclass
 class VoronoiBoundaryHit:
@@ -30,12 +32,10 @@ def voronoi_boundary_ratio(
     deep inside its own cluster.
 
     Returns:
-        ratios:                shape (n_samples,) float32
-        nearest_other_labels:  shape (n_samples,) int64  — index of the closest
-                               centroid that is NOT the point's own cluster
+        ratios:               shape (n_samples,) float32
+        nearest_other:        shape (n_samples,) int64  — index of the closest
+                              centroid that is NOT the point's own cluster
     """
-    n_clusters = centroids.shape[0]
-
     # Pairwise squared distances: (n_samples, n_clusters)
     # ||v - c||^2 = ||v||^2 - 2 v·c + ||c||^2
     sq_norms_v = np.einsum("ij,ij->i", vectors, vectors)[:, None]   # (n, 1)
@@ -59,7 +59,7 @@ def voronoi_boundary_ratio(
 
 
 def boundary_rankings_for_all_clusters(
-    datapoints,
+    datapoints: list[Datapoint],
     vectors: np.ndarray,
     labels: np.ndarray,
     centroids: np.ndarray,

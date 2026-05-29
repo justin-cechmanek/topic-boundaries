@@ -141,10 +141,8 @@ def main(argv: list[str] | None = None) -> int:
         for cid, gidx in idx_map.items():
             for gi in gidx:
                 dp = state.datapoints[int(gi)]
-                t = dp.meta.get("title")
-                title = str(t).strip() if t is not None else ""
                 boundary_by_cluster[int(cid)].append(
-                    {"title": title, "abstract": dp.body}
+                    {"title": titles_by_doc.get(dp.doc_id, ""), "abstract": dp.body}
                 )
         out["boundary_by_cluster"] = boundary_by_cluster
 
