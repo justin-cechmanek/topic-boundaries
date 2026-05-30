@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from src.documents import datapoint_from_record
 from src.visualization import boundary_highlight_indices, project_to_2d
@@ -79,12 +80,12 @@ def test_results_json_loads_with_viz_helpers():
     root = Path(__file__).resolve().parents[1]
     path = root / "results" / "ml_ai_100_max_distance_sort_n10_top5.json"
     if not path.is_file():
-        return
+        pytest.skip(f"missing results fixture: {path}")
     with path.open(encoding="utf-8") as f:
         data = json.load(f)
     sample = root / "datasets" / "arxiv" / "ml_ai_100.jsonl"
     if not sample.is_file():
-        return
+        pytest.skip(f"missing dataset fixture: {sample}")
     from src.documents import load_jsonl
 
     dps = load_jsonl(sample)
