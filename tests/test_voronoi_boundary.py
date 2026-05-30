@@ -195,8 +195,12 @@ def test_high_dimensional_vectors():
     rng = np.random.default_rng(7)
     n, dim, k = 100, 384, 5
     vectors = rng.standard_normal((n, dim)).astype(np.float32)
-    labels = np.repeat(np.arange(k), n // k).astype(np.int64)
-    centroids = np.stack([vectors[labels == c].mean(axis=0) for c in range(k)]).astype(np.float32)
+    # Seed centroids from distinct points, then assign each vector to its nearest centroid
+    # so the ratio <= 1.0 invariant is guaranteed (mirrors KMeans assignment).
+    centroids = vectors[:k].copy()
+    labels = np.argmin(
+        np.linalg.norm(vectors[:, None, :] - centroids[None, :, :], axis=2), axis=1
+    ).astype(np.int64)
     ratios, nearest_other = voronoi_boundary_ratio(vectors, labels, centroids)
     assert ratios.shape == (n,)
     assert (ratios >= 0.0).all()

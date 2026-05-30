@@ -47,7 +47,7 @@ def voronoi_boundary_ratio(
     sq_norms_v = np.einsum("ij,ij->i", vectors, vectors)[:, None]   # (n, 1)
     sq_norms_c = np.einsum("ij,ij->i", centroids, centroids)[None, :]  # (1, k)
     dot = vectors @ centroids.T                                        # (n, k)
-    dists_sq = np.maximum(sq_norms_v - 2.0 * dot + sq_norms_c, 0.0)
+    dists_sq = np.maximum(sq_norms_v - np.float32(2.0) * dot + sq_norms_c, np.float32(0.0))
     dists = np.sqrt(dists_sq).astype(np.float32)
 
     dist_own = dists[np.arange(len(labels)), labels]
