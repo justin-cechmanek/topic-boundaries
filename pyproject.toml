@@ -23,9 +23,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 corpus = ["pypdf>=4.0"]
+viz = ["plotly>=5.18"]
 
 [project.scripts]
 topic-boundaries = "src.cli:main"
+topic-boundaries-viz = "src.visualization.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["src", "src.*"]

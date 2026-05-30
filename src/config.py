@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,10 +50,14 @@ class Settings:
         km = data.get("kmeans", {})
         if km and not isinstance(km, dict):
             raise ValueError("Config key 'kmeans' must be a map.")
+        # Environment variables override config.yml values, matching the old from_env() behaviour.
         return cls(
-            redis_url=str(data.get("redis_url", "redis://localhost:6379/0")),
-            embedding_model=str(
-                data.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2")
+            redis_url=os.environ.get(
+                "REDIS_URL", str(data.get("redis_url", "redis://localhost:6379/0"))
+            ),
+            embedding_model=os.environ.get(
+                "EMBEDDING_MODEL",
+                str(data.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2")),
             ),
             schema_path=sp,
             kmeans_random_state=int(km.get("random_state", 42)),

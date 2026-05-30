@@ -10,6 +10,39 @@ from src.documents import Datapoint
 from src.indexing import IndexedCorpus, create_and_load, open_index, records_for_redis
 
 
+def embed_and_cluster_datapoints(
+    datapoints: list[Datapoint],
+    *,
+    n_clusters: int,
+    embedding_model: str,
+    embed_batch_size: int = 64,
+    kmeans_random_state: int = 42,
+    kmeans_n_init: int | str = "auto",
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
+    """Embed texts and run KMeans without touching Redis (for analysis / visualization)."""
+    texts = [d.body for d in datapoints]
+    vectorizer = HFTextVectorizer(model=embedding_model)
+    show_progress = len(texts) > embed_batch_size
+    vectors = np.asarray(
+        vectorizer.embed_many(
+            contents=texts,
+            batch_size=embed_batch_size,
+            normalize_embeddings=True,
+            show_progress_bar=show_progress,
+        ),
+        dtype=np.float32,
+    )
+    labels, centroids = cluster_embeddings(
+        vectors,
+        n_clusters,
+        random_state=kmeans_random_state,
+        n_init=kmeans_n_init,
+    )
+    if vectorizer.dims is None:
+        raise RuntimeError("Vectorizer has no dims.")
+    return vectors, labels, centroids, int(vectorizer.dims)
+
+
 @dataclass
 class PipelineState:
     datapoints: list[Datapoint]
@@ -31,26 +64,14 @@ def run_pipeline(
     kmeans_random_state: int = 42,
     kmeans_n_init: int | str = "auto",
 ) -> PipelineState:
-    # Datapoint.body holds the string passed to the vectorizer (abstract for arXiv JSONL).
-    texts = [d.body for d in datapoints]
     ids = [d.doc_id for d in datapoints]
-
-    vectorizer = HFTextVectorizer(model=embedding_model)
-    show_progress = len(texts) > embed_batch_size
-    vectors = np.asarray(
-        vectorizer.embed_many(
-            contents=texts,
-            batch_size=embed_batch_size,
-            normalize_embeddings=True,
-            show_progress_bar=show_progress,
-        ),
-        dtype=np.float32,
-    )
-    labels, centroids = cluster_embeddings(
-        vectors,
-        n_clusters,
-        random_state=kmeans_random_state,
-        n_init=kmeans_n_init,
+    vectors, labels, centroids, vector_dim = embed_and_cluster_datapoints(
+        datapoints,
+        n_clusters=n_clusters,
+        embedding_model=embedding_model,
+        embed_batch_size=embed_batch_size,
+        kmeans_random_state=kmeans_random_state,
+        kmeans_n_init=kmeans_n_init,
     )
 
     counts = cluster_counts(labels, n_clusters)
@@ -59,11 +80,8 @@ def run_pipeline(
             "Some clusters are empty; decrease n_clusters or increase dataset size."
         )
 
-    if vectorizer.dims is None:
-        raise RuntimeError("Vectorizer has no dims; cannot build Redis schema.")
-    vector_dim = vectorizer.dims
     index = open_index(schema_path, redis_url, vector_dim)
-    records = records_for_redis(ids, texts, vectors, labels)
+    records = records_for_redis(ids, [d.body for d in datapoints], vectors, labels)
     create_and_load(
         index,
         records,
