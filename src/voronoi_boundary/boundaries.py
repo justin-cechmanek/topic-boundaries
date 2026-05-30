@@ -36,6 +36,12 @@ def voronoi_boundary_ratio(
         nearest_other:        shape (n_samples,) int64  — index of the closest
                               centroid that is NOT the point's own cluster
     """
+    if centroids.shape[0] < 2:
+        raise ValueError(
+            "voronoi_boundary_ratio requires at least 2 clusters; "
+            f"got centroids.shape[0]={centroids.shape[0]}."
+        )
+
     # Pairwise squared distances: (n_samples, n_clusters)
     # ||v - c||^2 = ||v||^2 - 2 v·c + ||c||^2
     sq_norms_v = np.einsum("ij,ij->i", vectors, vectors)[:, None]   # (n, 1)
@@ -46,10 +52,9 @@ def voronoi_boundary_ratio(
 
     dist_own = dists[np.arange(len(labels)), labels]
 
-    # Mask own cluster so argmin finds the nearest *other* centroid.
-    masked = dists.copy()
-    masked[np.arange(len(labels)), labels] = np.inf
-    nearest_other = np.argmin(masked, axis=1).astype(np.int64)
+    # Mask own cluster in-place so argmin finds the nearest *other* centroid.
+    dists[np.arange(len(labels)), labels] = np.inf
+    nearest_other = np.argmin(dists, axis=1).astype(np.int64)
     dist_other = dists[np.arange(len(labels)), nearest_other]
 
     with np.errstate(divide="ignore", invalid="ignore"):

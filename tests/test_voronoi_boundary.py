@@ -84,6 +84,15 @@ def test_boundary_point_ranks_highest():
     assert top == 2
 
 
+def test_single_cluster_raises():
+    """k=1 makes nearest_other undefined; should raise immediately."""
+    vectors = np.array([[1.0, 0.0], [0.9, 0.1]], dtype=np.float32)
+    labels = np.array([0, 0], dtype=np.int64)
+    centroids = np.array([[0.95, 0.05]], dtype=np.float32)
+    with pytest.raises(ValueError, match="at least 2 clusters"):
+        voronoi_boundary_ratio(vectors, labels, centroids)
+
+
 def test_centroid_itself_has_ratio_zero():
     """A vector equal to its own centroid is maximally central — ratio should be 0."""
     centroids = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
