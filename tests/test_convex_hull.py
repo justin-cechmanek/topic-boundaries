@@ -41,6 +41,7 @@ def test_boundary_doc_indices_maps_to_global_and_handles_empty():
     rng = np.random.default_rng(1)
     vectors = rng.standard_normal((5, 4)).astype(np.float32)
     out = boundary_doc_indices_per_cluster(labels, vectors, 3)
-    assert set(out[0].tolist()) <= {0, 2, 4}
-    assert set(out[1].tolist()) <= {1, 3}
+    # 3 pts in cluster 0 -> triangle -> all 3 are hull vertices, mapped to globals.
+    assert set(out[0].tolist()) == {0, 2, 4}
+    assert set(out[1].tolist()) == {1, 3}
     assert out[2].size == 0

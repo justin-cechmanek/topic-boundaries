@@ -67,6 +67,8 @@ def chunk_text(text: str, *, max_chars: int = 1500, overlap: int = 200) -> list[
             piece = p[start:end].strip()
             if piece:
                 chunks.append(piece)
+            if end >= len(p):
+                break  # reached the end; overlap step would emit duplicate tails
             start = max(end - overlap, start + 1)
         buf = ""
     if buf:

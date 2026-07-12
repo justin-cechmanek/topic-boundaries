@@ -22,8 +22,10 @@ def test_oversized_paragraph_hard_split_with_overlap():
     chunks = chunk_text(para, max_chars=100, overlap=20)
     assert len(chunks) > 1
     assert all(len(c) <= 100 for c in chunks)
-    # overlap: end of chunk[0] reappears at start of chunk[1]
-    assert chunks[0][-10:] in (chunks[0] + chunks[1])
+    # overlap: the tail of chunk[0] actually reappears at the start of chunk[1].
+    assert chunks[0][-15:] in chunks[1]
+    # no duplicate tail crawl: char count roughly tracks input + overlap, not 5x.
+    assert sum(len(c) for c in chunks) < 2 * len(para)
 
 
 @pytest.mark.parametrize(
@@ -38,7 +40,8 @@ def test_project_proposal_pdf_chunks(pdf_name: str):
     pdf = root / pdf_name
     if not pdf.is_file():
         pytest.skip(f"missing {pdf}")
-    dps = pdf_to_datapoints(pdf, max_chars=2000)
+    # ~2.5k chars of extractable text; 500-char chunks give several real chunks.
+    dps = pdf_to_datapoints(pdf, max_chars=500)
     assert len(dps) >= 5
     assert all(len(d.body) > 50 for d in dps[:3])
     # doc_id format "{stem}#chunk{i}" and per-chunk meta.
