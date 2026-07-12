@@ -17,6 +17,15 @@ def test_chunk_respects_paragraph_boundaries():
     assert "para one" in joined
 
 
+def test_oversized_paragraph_hard_split_with_overlap():
+    para = "word " * 100  # ~500 chars, one paragraph, no blank lines
+    chunks = chunk_text(para, max_chars=100, overlap=20)
+    assert len(chunks) > 1
+    assert all(len(c) <= 100 for c in chunks)
+    # overlap: end of chunk[0] reappears at start of chunk[1]
+    assert chunks[0][-10:] in (chunks[0] + chunks[1])
+
+
 @pytest.mark.parametrize(
     "pdf_name",
     ["knowledge_boundaries_paper_proposal.pdf"],
@@ -32,3 +41,9 @@ def test_project_proposal_pdf_chunks(pdf_name: str):
     dps = pdf_to_datapoints(pdf, max_chars=2000)
     assert len(dps) >= 5
     assert all(len(d.body) > 50 for d in dps[:3])
+    # doc_id format "{stem}#chunk{i}" and per-chunk meta.
+    stem = pdf.stem
+    assert dps[0].doc_id == f"{stem}#chunk0"
+    assert dps[3].doc_id == f"{stem}#chunk3"
+    assert dps[0].meta["chunk_index"] == 0
+    assert dps[0].meta["source_pdf"].endswith(pdf_name)

@@ -2,7 +2,7 @@
 #   pip install -e ".[dev]"
 numpy>=1.24
 scikit-learn>=1.3
-redis>=5.0
+redis>=5.0,<8.0  # redisvl requires <8.0; unbounded lets pip pull 8.x and break imports
 redisvl>=0.12
 sentence-transformers>=2.6
 requests>=2.31

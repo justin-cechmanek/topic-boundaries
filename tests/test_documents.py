@@ -46,3 +46,29 @@ def test_arxiv_link_alias_for_abstract_records():
     )
     assert "1111.2222" in dp.doc_id
     assert dp.body == "paper summary"
+
+
+@pytest.mark.parametrize(
+    "rec,expected_id",
+    [
+        ({"body": "b", "doc_id": "d1"}, "d1"),
+        ({"body": "b", "id": "i1"}, "i1"),
+        ({"body": "b", "arxiv_link": "l1"}, "l1"),
+        ({"body": "b", "arxive_link": "l2"}, "l2"),
+    ],
+)
+def test_body_record_doc_id_fallback_chain(rec, expected_id):
+    assert datapoint_from_record(rec).doc_id == expected_id
+
+
+def test_empty_inferred_doc_id_raises():
+    with pytest.raises(ValueError):
+        datapoint_from_record({"abstract": "text but no id"})
+
+
+def test_meta_excludes_body_and_abstract():
+    dp = datapoint_from_record(
+        {"abstract": "a", "arxiv_link": "l", "title": "T", "subjects": ["x"]}
+    )
+    assert "abstract" not in dp.meta and "body" not in dp.meta
+    assert dp.meta["title"] == "T" and dp.meta["subjects"] == ["x"]
