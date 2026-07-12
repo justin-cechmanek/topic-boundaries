@@ -5,7 +5,15 @@ import pytest
 from src.config import Settings, _parse_n_init
 
 
-def test_settings_reads_redis_model_and_kmeans_from_config(tmp_path: Path):
+@pytest.fixture
+def _no_config_env(monkeypatch):
+    """Config precedence tests must ignore any REDIS_URL/EMBEDDING_MODEL the
+    caller's shell (or CI) has exported, since env overrides the config file."""
+    monkeypatch.delenv("REDIS_URL", raising=False)
+    monkeypatch.delenv("EMBEDDING_MODEL", raising=False)
+
+
+def test_settings_reads_redis_model_and_kmeans_from_config(_no_config_env, tmp_path: Path):
     cfg = tmp_path / "config.yml"
     cfg.write_text(
         "\n".join(
@@ -26,13 +34,23 @@ def test_settings_reads_redis_model_and_kmeans_from_config(tmp_path: Path):
     assert s.redis_url == "redis://localhost:6379/9"
 
 
-def test_settings_defaults_without_config_file(tmp_path: Path):
+def test_settings_defaults_without_config_file(_no_config_env, tmp_path: Path):
     missing = tmp_path / "missing.yml"
     s = Settings.from_config(config_path=missing)
     assert s.redis_url == "redis://localhost:6379/0"
     assert s.embedding_model == "sentence-transformers/all-MiniLM-L6-v2"
     assert s.kmeans_random_state == 42
     assert s.kmeans_n_init == "auto"
+
+
+def test_env_overrides_config(monkeypatch, tmp_path: Path):
+    cfg = tmp_path / "config.yml"
+    cfg.write_text("redis_url: redis://from-file:6379/1\n", encoding="utf-8")
+    monkeypatch.setenv("REDIS_URL", "redis://from-env:6379/2")
+    monkeypatch.setenv("EMBEDDING_MODEL", "env-model")
+    s = Settings.from_config(config_path=cfg)
+    assert s.redis_url == "redis://from-env:6379/2"  # env wins over file
+    assert s.embedding_model == "env-model"
 
 
 @pytest.mark.parametrize(
