@@ -42,6 +42,19 @@ A **topic boundary** is the set of datapoints (ideas, statements, concepts) that
 
 The installable Python package is named `topic-boundaries` on PyPI metadata but the import path is still **`src`** (e.g. `from src.pipeline import run_pipeline`). Run CLI from the repo root, or use the `topic-boundaries` entry point after `pip install -e .`.
 
+## Testing
+
+```bash
+pip install -e ".[dev,corpus]"
+docker compose up -d          # Redis Stack, for the integration tests
+pytest                         # or: pytest --cov=src --cov-report=term-missing
+```
+
+Tests use no mocks — they exercise real code paths. The `integration`-marked
+tests run against a live Redis Stack (and the embedding pipeline uses the real
+model); they **skip automatically** when Redis is unreachable, so `pytest` still
+passes without it. Override the Redis target with `REDIS_URL=...`.
+
 ## The process
 
 Each technique lives under its own subdirectory inside **`src`**. They share these steps:
