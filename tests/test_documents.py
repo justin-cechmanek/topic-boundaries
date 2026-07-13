@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.documents import datapoint_from_record, load_jsonl
+from topic_boundaries.documents import datapoint_from_record, load_jsonl
 
 
 def test_load_sample_jsonl(tmp_path: Path):

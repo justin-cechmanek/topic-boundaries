@@ -40,14 +40,14 @@ A **topic boundary** is the set of datapoints (ideas, statements, concepts) that
    To use a non-default config file, pass `--config /path/to/config.yml`.
    You can still override the configured Redis URL with `--redis-url`.
 
-The installable Python package is named `topic-boundaries` on PyPI metadata but the import path is still **`src`** (e.g. `from src.pipeline import run_pipeline`). Run CLI from the repo root, or use the `topic-boundaries` entry point after `pip install -e .`.
+The package installs and imports as **`topic_boundaries`** (e.g. `from topic_boundaries import Datapoint, CsvSource, run_pipeline`). Run the CLI via the `topic-boundaries` entry point after `pip install -e .`, or `python find_topics.py` from the repo root.
 
 ## Testing
 
 ```bash
 pip install -e ".[dev,corpus]"
 docker compose up -d          # Redis Stack, for the integration tests
-pytest                         # or: pytest --cov=src --cov-report=term-missing
+pytest                         # or: pytest --cov=topic_boundaries --cov-report=term-missing
 ```
 
 Tests use no mocks — they exercise real code paths. The `integration`-marked
@@ -57,7 +57,7 @@ passes without it. Override the Redis target with `REDIS_URL=...`.
 
 ## The process
 
-Each technique lives under its own subdirectory inside **`src`**. They share these steps:
+Each technique lives under its own subdirectory inside **`topic_boundaries`**. They share these steps:
 
 1. Choose a dataset to analyse.
 2. Load the raw text and parse it into datapoints.
@@ -74,7 +74,7 @@ For each cluster, rank documents by greatest distance to the centroid (farthest-
 
 ### 2. Convex hull
 
-Use [convex hull algorithms](https://en.wikipedia.org/wiki/Convex_hull_algorithms), specifically [Quickhull](https://en.wikipedia.org/wiki/Quickhull), on a PCA-compressed representation of each cluster to approximate hull vertices (see `src/convex_hull/`).
+Use [convex hull algorithms](https://en.wikipedia.org/wiki/Convex_hull_algorithms), specifically [Quickhull](https://en.wikipedia.org/wiki/Quickhull), on a PCA-compressed representation of each cluster to approximate hull vertices (see `topic_boundaries/convex_hull/`).
 
 ### 3. Cross boundary
 

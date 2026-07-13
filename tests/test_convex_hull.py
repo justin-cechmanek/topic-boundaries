@@ -3,7 +3,7 @@ import pytest
 
 pytest.importorskip("sklearn")
 
-from src.convex_hull.boundaries import (
+from topic_boundaries.convex_hull.boundaries import (
     boundary_doc_indices_per_cluster,
     hull_boundary_indices,
 )

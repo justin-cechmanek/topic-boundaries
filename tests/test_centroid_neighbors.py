@@ -1,6 +1,6 @@
 import pytest
 
-from src.centroid_neighbors import nearest_to_centroid
+from topic_boundaries.centroid_neighbors import nearest_to_centroid
 
 
 @pytest.mark.integration

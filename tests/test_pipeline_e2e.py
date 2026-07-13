@@ -12,9 +12,9 @@ import pytest
 
 pytest.importorskip("sentence_transformers")
 
-from src.cli import main
-from src.documents import load_jsonl
-from src.pipeline import run_pipeline
+from topic_boundaries.cli import main
+from topic_boundaries.documents import load_jsonl
+from topic_boundaries.pipeline import run_pipeline
 
 ROOT = Path(__file__).resolve().parents[1]
 

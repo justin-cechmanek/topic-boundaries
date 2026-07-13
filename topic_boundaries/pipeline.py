@@ -5,9 +5,9 @@ from dataclasses import dataclass
 import numpy as np
 from redisvl.utils.vectorize import HFTextVectorizer
 
-from src.clustering import cluster_counts, cluster_embeddings
-from src.documents import Datapoint
-from src.indexing import IndexedCorpus, create_and_load, open_index, records_for_redis
+from topic_boundaries.clustering import cluster_counts, cluster_embeddings
+from topic_boundaries.documents import Datapoint
+from topic_boundaries.indexing import IndexedCorpus, create_and_load, open_index, records_for_redis
 
 
 def embed_and_cluster_datapoints(

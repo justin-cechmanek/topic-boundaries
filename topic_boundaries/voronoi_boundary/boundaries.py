@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from src.documents import Datapoint
+from topic_boundaries.documents import Datapoint
 
 
 @dataclass

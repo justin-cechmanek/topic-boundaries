@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from src.documents import Datapoint
-from src.voronoi_boundary.boundaries import (
+from topic_boundaries.documents import Datapoint
+from topic_boundaries.voronoi_boundary.boundaries import (
     VoronoiBoundaryHit,
     boundary_rankings_for_all_clusters,
     voronoi_boundary_ratio,

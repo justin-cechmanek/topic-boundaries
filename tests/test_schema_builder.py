@@ -4,13 +4,13 @@ import pytest
 
 pytest.importorskip("redisvl")
 
-from src.schema_builder import load_schema_for_dims
+from topic_boundaries.schema_builder import load_schema_for_dims
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_overrides_embedding_dims():
-    schema = load_schema_for_dims(ROOT / "src" / "schema.yml", 128)
+    schema = load_schema_for_dims(ROOT / "topic_boundaries" / "schema.yml", 128)
     emb = schema.fields["embedding"]
     # redisvl stores vector attrs; dims must reflect the override, not schema.yml's 384.
     assert emb.attrs.dims == 128

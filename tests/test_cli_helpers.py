@@ -3,8 +3,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from src.cli import _doc_id_to_title, _json_serial, _parse_kmeans_n_init
-from src.documents import Datapoint, load_jsonl
+from topic_boundaries.cli import _doc_id_to_title, _json_serial, _parse_kmeans_n_init
+from topic_boundaries.documents import Datapoint, load_jsonl
 
 
 def test_doc_id_to_title_from_arxiv_jsonl():

@@ -4,8 +4,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from src.documents import datapoint_from_record
-from src.visualization import boundary_highlight_indices, project_to_2d
+from topic_boundaries.documents import datapoint_from_record
+from topic_boundaries.visualization import boundary_highlight_indices, project_to_2d
 
 
 def test_boundary_highlight_matches_title_and_abstract():
@@ -86,7 +86,7 @@ def test_results_json_loads_with_viz_helpers():
     sample = root / "datasets" / "arxiv" / "ml_ai_100.jsonl"
     if not sample.is_file():
         pytest.skip(f"missing dataset fixture: {sample}")
-    from src.documents import load_jsonl
+    from topic_boundaries.documents import load_jsonl
 
     dps = load_jsonl(sample)
     hi = boundary_highlight_indices(data, dps)

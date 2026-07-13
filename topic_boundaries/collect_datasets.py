@@ -2,7 +2,7 @@
 Harvest arXiv Atom API results into JSONL under datasets/.
 
 Example:
-  PYTHONPATH=. python -m src.collect_datasets --query "cat:cs.CL" --max-results 200 \\
+  PYTHONPATH=. python -m topic_boundaries.collect_datasets --query "cat:cs.CL" --max-results 200 \\
       --out datasets/arxiv/cs_cl.jsonl
 """
 

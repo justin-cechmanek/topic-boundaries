@@ -5,15 +5,15 @@ import json
 import sys
 from pathlib import Path
 
-from src.config import Settings
-from src.convex_hull.boundaries import boundary_doc_indices_per_cluster
-from src.cross_boundary.boundaries import cross_boundary_hits_for_all_clusters
-from src.documents import Datapoint, load_jsonl
-from src.pdf_corpus import pdf_to_datapoints
-from src.centroid_neighbors import nearest_to_centroid
-from src.max_distance_sort.boundaries import boundary_rankings_for_all_clusters
-from src.voronoi_boundary.boundaries import boundary_rankings_for_all_clusters as voronoi_boundary_rankings_for_all_clusters
-from src.pipeline import run_pipeline
+from topic_boundaries.config import Settings
+from topic_boundaries.convex_hull.boundaries import boundary_doc_indices_per_cluster
+from topic_boundaries.cross_boundary.boundaries import cross_boundary_hits_for_all_clusters
+from topic_boundaries.documents import Datapoint, load_jsonl
+from topic_boundaries.pdf_corpus import pdf_to_datapoints
+from topic_boundaries.centroid_neighbors import nearest_to_centroid
+from topic_boundaries.max_distance_sort.boundaries import boundary_rankings_for_all_clusters
+from topic_boundaries.voronoi_boundary.boundaries import boundary_rankings_for_all_clusters as voronoi_boundary_rankings_for_all_clusters
+from topic_boundaries.pipeline import run_pipeline
 
 
 def _json_serial(obj):

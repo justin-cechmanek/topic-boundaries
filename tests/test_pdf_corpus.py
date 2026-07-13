@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from src.pdf_corpus import chunk_text, normalize_whitespace
+from topic_boundaries.pdf_corpus import chunk_text, normalize_whitespace
 
 
 def test_normalize_whitespace_collapses_line_noise():
@@ -34,7 +34,7 @@ def test_oversized_paragraph_hard_split_with_overlap():
 )
 def test_project_proposal_pdf_chunks(pdf_name: str):
     pytest.importorskip("pypdf")
-    from src.pdf_corpus import pdf_to_datapoints
+    from topic_boundaries.pdf_corpus import pdf_to_datapoints
 
     root = Path(__file__).resolve().parents[1]
     pdf = root / pdf_name

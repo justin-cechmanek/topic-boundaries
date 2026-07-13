@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from src.collect_datasets import parse_entry
+from topic_boundaries.collect_datasets import parse_entry
 
 # One arXiv Atom <entry>, verbatim shape from the export API (no network).
 ENTRY_XML = """

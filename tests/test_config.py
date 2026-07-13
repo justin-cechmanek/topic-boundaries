@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from src.config import Settings, _parse_n_init
+from topic_boundaries.config import Settings, _parse_n_init
 
 
 @pytest.fixture
