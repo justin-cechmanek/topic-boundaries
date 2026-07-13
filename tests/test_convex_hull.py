@@ -28,11 +28,14 @@ def test_hull_low_dim_returns_all():
     np.testing.assert_array_equal(hull_boundary_indices(X), np.arange(5))
 
 
-def test_hull_collinear_falls_back_to_pc1_extrema():
-    # Rank-1 points in 3D -> Qhull degenerate -> argmin/argmax(PC1) fallback.
-    X = np.array([[i, 2 * i, 3 * i] for i in range(6)], dtype=np.float32)
+def test_hull_degenerate_falls_back_to_pc1_extrema():
+    # Coincident points have zero volume in every dimension, so Qhull always
+    # raises regardless of scipy version -> argmin/argmax(PC1) fallback. (A
+    # collinear cloud isn't portable: some qhull builds hull it along the line.)
+    X = np.ones((5, 3), dtype=np.float32)
     ix = hull_boundary_indices(X)
-    assert set(ix.tolist()) == {0, 5}
+    # All PC1 values equal -> argmin == argmax == 0 -> single index.
+    assert ix.tolist() == [0]
 
 
 def test_boundary_doc_indices_maps_to_global_and_handles_empty():
