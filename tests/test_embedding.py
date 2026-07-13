@@ -26,7 +26,7 @@ def test_precomputed_rejects_missing_vector():
 
 def test_precomputed_rejects_ragged_dims():
     emb = PrecomputedEmbedder()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="inconsistent shapes"):
         emb.embed([_dp("a", [1.0, 0.0]), _dp("b", [1.0, 0.0, 0.0])])
 
 

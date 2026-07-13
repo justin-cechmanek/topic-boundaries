@@ -18,7 +18,9 @@ class Datapoint:
     meta: dict[str, Any] = field(default_factory=dict)
     # Optional precomputed embedding. When set, PrecomputedEmbedder uses it and
     # no text embedding happens; `body` may be empty for vector-only data.
-    vector: np.ndarray | None = None
+    # compare=False: ndarray __eq__ is elementwise and would make Datapoint
+    # equality raise; doc_id identity is what matters anyway.
+    vector: np.ndarray | None = field(default=None, compare=False)
 
 
 def load_jsonl(path: Path) -> list[Datapoint]:

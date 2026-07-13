@@ -193,7 +193,9 @@ class TextDirSource:
         return out
 
 
-# CLI-facing registry (name -> factory taking the parsed args namespace).
+# Programmatic registry of built-in sources, for discovery and plug-ins:
+# `SOURCES[name](...)` / `register_source("myfmt", MySource)`. The CLI uses its
+# own typed flags (--csv, --text-dir, ...) rather than this map.
 SOURCES: dict[str, Callable[..., DataSource]] = {
     "jsonl": JsonlSource,
     "pdf": PdfSource,
@@ -204,5 +206,5 @@ SOURCES: dict[str, Callable[..., DataSource]] = {
 
 
 def register_source(name: str, factory: Callable[..., DataSource]) -> None:
-    """Register a DataSource factory under `name` for CLI/plug-in use."""
+    """Register a DataSource factory under `name` (programmatic/plug-in use)."""
     SOURCES[name] = factory

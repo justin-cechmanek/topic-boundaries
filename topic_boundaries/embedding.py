@@ -71,10 +71,19 @@ class PrecomputedEmbedder:
                 f"{len(missing)} datapoint(s) have no precomputed vector "
                 f"(first: {missing[0]!r}). Set Datapoint.vector for every point."
             )
-        vectors = np.asarray([np.asarray(d.vector, dtype=np.float32) for d in datapoints])
+        try:
+            vectors = np.asarray(
+                [np.asarray(d.vector, dtype=np.float32) for d in datapoints]
+            )
+        except ValueError as e:  # ragged -> numpy "inhomogeneous shape"
+            shapes = sorted({np.asarray(d.vector).shape for d in datapoints})
+            raise ValueError(
+                f"Precomputed vectors have inconsistent shapes: {shapes}."
+            ) from e
         if vectors.ndim != 2:
-            dims = {np.asarray(d.vector).shape for d in datapoints}
-            raise ValueError(f"Precomputed vectors have inconsistent shapes: {dims}.")
+            raise ValueError(
+                f"Expected a 2-D vector matrix, got shape {vectors.shape}."
+            )
         self._dims = int(vectors.shape[1])
         return vectors.astype(np.float32)
 

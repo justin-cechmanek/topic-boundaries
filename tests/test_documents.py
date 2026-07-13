@@ -74,6 +74,17 @@ def test_meta_excludes_body_and_abstract():
     assert dp.meta["title"] == "T" and dp.meta["subjects"] == ["x"]
 
 
+def test_datapoint_equality_with_vectors():
+    import numpy as np
+
+    from topic_boundaries.documents import Datapoint
+
+    a = Datapoint("x", body="b", vector=np.array([1.0, 2.0, 3.0]))
+    b = Datapoint("x", body="b", vector=np.array([9.9, 9.9]))
+    # vector is compare=False, so equality must not raise and rests on doc_id/body.
+    assert a == b
+
+
 def test_record_reads_precomputed_vector():
     import numpy as np
 
