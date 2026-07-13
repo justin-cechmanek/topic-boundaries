@@ -3,44 +3,48 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from redisvl.utils.vectorize import HFTextVectorizer
 
 from topic_boundaries.clustering import cluster_counts, cluster_embeddings
 from topic_boundaries.documents import Datapoint
+from topic_boundaries.embedding import Embedder, HFTextEmbedder
 from topic_boundaries.indexing import IndexedCorpus, create_and_load, open_index, records_for_redis
+
+
+def _resolve_embedder(
+    embedder: Embedder | None, embedding_model: str | None, batch_size: int
+) -> Embedder:
+    if embedder is not None:
+        return embedder
+    if embedding_model is None:
+        raise ValueError("Provide either `embedder` or `embedding_model`.")
+    return HFTextEmbedder(embedding_model, batch_size=batch_size)
 
 
 def embed_and_cluster_datapoints(
     datapoints: list[Datapoint],
     *,
     n_clusters: int,
-    embedding_model: str,
+    embedding_model: str | None = None,
+    embedder: Embedder | None = None,
     embed_batch_size: int = 64,
     kmeans_random_state: int = 42,
     kmeans_n_init: int | str = "auto",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
-    """Embed texts and run KMeans without touching Redis (for analysis / visualization)."""
-    texts = [d.body for d in datapoints]
-    vectorizer = HFTextVectorizer(model=embedding_model)
-    show_progress = len(texts) > embed_batch_size
-    vectors = np.asarray(
-        vectorizer.embed_many(
-            contents=texts,
-            batch_size=embed_batch_size,
-            normalize_embeddings=True,
-            show_progress_bar=show_progress,
-        ),
-        dtype=np.float32,
-    )
+    """Embed datapoints and run KMeans without touching Redis (for analysis / viz).
+
+    Supply your own `embedder` (e.g. PrecomputedEmbedder) or an `embedding_model`
+    for the default text embedder.
+    """
+    embedder = _resolve_embedder(embedder, embedding_model, embed_batch_size)
+    vectors = np.asarray(embedder.embed(datapoints), dtype=np.float32)
     labels, centroids = cluster_embeddings(
         vectors,
         n_clusters,
         random_state=kmeans_random_state,
         n_init=kmeans_n_init,
     )
-    if vectorizer.dims is None:
-        raise RuntimeError("Vectorizer has no dims.")
-    return vectors, labels, centroids, int(vectorizer.dims)
+    dim = embedder.dims if embedder.dims is not None else int(vectors.shape[1])
+    return vectors, labels, centroids, int(dim)
 
 
 @dataclass
@@ -57,7 +61,8 @@ def run_pipeline(
     *,
     redis_url: str,
     n_clusters: int,
-    embedding_model: str,
+    embedding_model: str | None = None,
+    embedder: Embedder | None = None,
     schema_path: str | None,
     overwrite_index: bool,
     embed_batch_size: int = 64,
@@ -69,6 +74,7 @@ def run_pipeline(
         datapoints,
         n_clusters=n_clusters,
         embedding_model=embedding_model,
+        embedder=embedder,
         embed_batch_size=embed_batch_size,
         kmeans_random_state=kmeans_random_state,
         kmeans_n_init=kmeans_n_init,
