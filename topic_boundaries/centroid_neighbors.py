@@ -3,7 +3,7 @@ from __future__ import annotations
 from redisvl.query import VectorQuery
 from redisvl.query.filter import Tag
 
-from src.max_distance_sort.boundaries import _cluster_doc_count
+from topic_boundaries.max_distance_sort.boundaries import _cluster_doc_count
 
 
 def nearest_to_centroid(

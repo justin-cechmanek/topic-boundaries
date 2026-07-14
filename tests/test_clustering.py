@@ -3,7 +3,7 @@ import pytest
 
 pytest.importorskip("sklearn")
 
-from src.clustering import cluster_counts, cluster_embeddings
+from topic_boundaries.clustering import cluster_counts, cluster_embeddings
 
 
 def test_cluster_embeddings_groups_separated_points():

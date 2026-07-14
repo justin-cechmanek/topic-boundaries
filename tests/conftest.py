@@ -11,7 +11,7 @@ import os
 import numpy as np
 import pytest
 
-from src.indexing import create_and_load, open_index, records_for_redis
+from topic_boundaries.indexing import create_and_load, open_index, records_for_redis
 
 DIM = 8  # small dim for hand-built vectors; open_index overrides schema.yml dims
 

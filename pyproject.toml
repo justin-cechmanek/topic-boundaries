@@ -32,8 +32,8 @@ markers = [
 ]
 
 [project.scripts]
-topic-boundaries = "src.cli:main"
-topic-boundaries-viz = "src.visualization.cli:main"
+topic-boundaries = "topic_boundaries.cli:main"
+topic-boundaries-viz = "topic_boundaries.visualization.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["src", "src.*"]
+include = ["topic_boundaries", "topic_boundaries.*"]

@@ -5,11 +5,11 @@ import json
 import sys
 from pathlib import Path
 
-from src.config import Settings, _parse_n_init
-from src.documents import load_jsonl
-from src.pipeline import embed_and_cluster_datapoints
-from src.visualization.core import boundary_highlight_indices, project_to_2d
-from src.visualization.figure import build_plotly_figure
+from topic_boundaries.config import Settings, _parse_n_init
+from topic_boundaries.documents import load_jsonl
+from topic_boundaries.pipeline import embed_and_cluster_datapoints
+from topic_boundaries.visualization.core import boundary_highlight_indices, project_to_2d
+from topic_boundaries.visualization.figure import build_plotly_figure
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -5,15 +5,15 @@ import json
 import sys
 from pathlib import Path
 
-from src.config import Settings
-from src.convex_hull.boundaries import boundary_doc_indices_per_cluster
-from src.cross_boundary.boundaries import cross_boundary_hits_for_all_clusters
-from src.documents import Datapoint, load_jsonl
-from src.pdf_corpus import pdf_to_datapoints
-from src.centroid_neighbors import nearest_to_centroid
-from src.max_distance_sort.boundaries import boundary_rankings_for_all_clusters
-from src.voronoi_boundary.boundaries import boundary_rankings_for_all_clusters as voronoi_boundary_rankings_for_all_clusters
-from src.pipeline import run_pipeline
+from topic_boundaries.config import Settings
+from topic_boundaries.convex_hull.boundaries import boundary_doc_indices_per_cluster
+from topic_boundaries.cross_boundary.boundaries import cross_boundary_hits_for_all_clusters
+from topic_boundaries.documents import Datapoint
+from topic_boundaries.sources import CsvSource, JsonlSource, PdfSource, TextDirSource
+from topic_boundaries.centroid_neighbors import nearest_to_centroid
+from topic_boundaries.max_distance_sort.boundaries import boundary_rankings_for_all_clusters
+from topic_boundaries.voronoi_boundary.boundaries import boundary_rankings_for_all_clusters as voronoi_boundary_rankings_for_all_clusters
+from topic_boundaries.pipeline import run_pipeline
 
 
 def _json_serial(obj):
@@ -45,11 +45,20 @@ def main(argv: list[str] | None = None) -> int:
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--data", type=Path, help="JSONL path (body or abstract).")
     src.add_argument("--pdf", type=Path, help="PDF path; text is chunked into datapoints.")
+    src.add_argument("--csv", type=Path, help="CSV path; see --csv-* options.")
+    src.add_argument("--text-dir", type=Path, help="Directory of .txt files, chunked.")
     p.add_argument(
         "--pdf-max-chars",
         type=int,
         default=1500,
-        help="Max characters per chunk when using --pdf.",
+        help="Max characters per chunk for --pdf / --text-dir.",
+    )
+    p.add_argument("--csv-id-col", default="id", help="CSV column for doc_id.")
+    p.add_argument("--csv-body-col", default="body", help="CSV column for text body.")
+    p.add_argument(
+        "--csv-vector-col",
+        default=None,
+        help="Optional CSV column holding a precomputed vector (JSON or space-separated).",
     )
     p.add_argument("--n-clusters", type=int, required=True)
     p.add_argument("--method", required=True, choices=[
@@ -85,10 +94,19 @@ def main(argv: list[str] | None = None) -> int:
     model = args.embedding_model or settings.embedding_model
 
     if args.pdf is not None:
-        datapoints = pdf_to_datapoints(args.pdf, max_chars=args.pdf_max_chars)
+        datapoints = PdfSource(args.pdf, max_chars=args.pdf_max_chars).load()
+    elif args.csv is not None:
+        datapoints = CsvSource(
+            args.csv,
+            id_col=args.csv_id_col,
+            body_col=args.csv_body_col,
+            vector_col=args.csv_vector_col,
+        ).load()
+    elif args.text_dir is not None:
+        datapoints = TextDirSource(args.text_dir, max_chars=args.pdf_max_chars).load()
     else:
         assert args.data is not None
-        datapoints = load_jsonl(args.data)
+        datapoints = JsonlSource(args.data).load()
     if len(datapoints) < args.n_clusters:
         print("Need at least as many datapoints as clusters.", file=sys.stderr)
         return 1

@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from src.documents import Datapoint
+from topic_boundaries.documents import Datapoint
 
 
 def _require_pypdf():

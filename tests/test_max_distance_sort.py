@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.max_distance_sort.boundaries import (
+from topic_boundaries.max_distance_sort.boundaries import (
     boundary_rankings_for_all_clusters,
     furthest_from_centroid,
 )

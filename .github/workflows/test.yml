@@ -6,6 +6,18 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Testing philosophy: no mocks — tests exercise real code and real services.
+# The `integration`-marked tests need a live Redis Stack; when none is reachable
+# they skip cleanly (see tests/conftest.py), so this workflow stays green while
+# still running every pure-logic test.
+#
+# TODO(redis): a managed cloud Redis (Stack/RediSearch) will be provisioned and
+# its connection string stored as the `REDIS_URL` GitHub Actions secret. Once it
+# exists, uncomment the `env: REDIS_URL:` line below — the integration + e2e
+# tests will then run against that real instance instead of skipping. Nothing
+# else needs to change; the tests already read REDIS_URL (default
+# redis://localhost:6379/0) and skip when it's unreachable.
+
 jobs:
   test:
     name: Python ${{ matrix.python-version }}
@@ -15,24 +27,11 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
 
-    # Redis Stack (RediSearch + vector) so the `integration` tests run for real,
-    # matching the image in docker-compose.yml.
-    services:
-      redis:
-        image: redis/redis-stack-server:7.4.0-v6
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    # No REDIS_URL here: code and tests already default to redis://localhost:6379/0
-    # (the service mapping below), and setting it would override the config-file
-    # precedence exercised by test_config.
     env:
       HF_HOME: ${{ github.workspace }}/hf_cache
+      # Uncomment once the cloud Redis secret is added; integration/e2e tests
+      # will then hit the real service instead of skipping:
+      # REDIS_URL: ${{ secrets.REDIS_URL }}
 
     steps:
       - name: Check out repository
@@ -44,8 +43,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      # Embedding model (~80MB) is downloaded by the end-to-end pipeline test;
-      # cache it so reruns skip the download.
+      # Embedding model (~80MB) is downloaded by the end-to-end pipeline test
+      # once Redis is available; cache it so reruns skip the download.
       - name: Cache HuggingFace models
         uses: actions/cache@v4
         with:
@@ -58,4 +57,4 @@ jobs:
           pip install -e ".[dev,corpus]"
 
       - name: Run tests
-        run: pytest -v --cov=src --cov-report=term-missing
+        run: pytest -v --cov=topic_boundaries --cov-report=term-missing

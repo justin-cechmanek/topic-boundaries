@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from src.indexing import records_for_redis
-from src.max_distance_sort.boundaries import _cluster_doc_count
+from topic_boundaries.indexing import records_for_redis
+from topic_boundaries.max_distance_sort.boundaries import _cluster_doc_count
 
 
 # --- pure logic: no Redis ---

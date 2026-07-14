@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.documents import datapoint_from_record, load_jsonl
+from topic_boundaries.documents import datapoint_from_record, load_jsonl
 
 
 def test_load_sample_jsonl(tmp_path: Path):
@@ -72,3 +72,33 @@ def test_meta_excludes_body_and_abstract():
     )
     assert "abstract" not in dp.meta and "body" not in dp.meta
     assert dp.meta["title"] == "T" and dp.meta["subjects"] == ["x"]
+
+
+def test_datapoint_equality_with_vectors():
+    import numpy as np
+
+    from topic_boundaries.documents import Datapoint
+
+    a = Datapoint("x", body="b", vector=np.array([1.0, 2.0, 3.0]))
+    b = Datapoint("x", body="b", vector=np.array([9.9, 9.9]))
+    # vector is compare=False, so equality must not raise and rests on doc_id/body.
+    assert a == b
+
+
+def test_record_reads_precomputed_vector():
+    import numpy as np
+
+    dp = datapoint_from_record({"doc_id": "v", "vector": [0.1, 0.2, 0.3]})
+    assert dp.body == ""  # vector-only, no text required
+    np.testing.assert_array_equal(dp.vector, np.array([0.1, 0.2, 0.3], dtype=np.float32))
+    assert "vector" not in dp.meta  # not leaked into meta
+
+
+def test_vector_only_record_still_needs_doc_id():
+    with pytest.raises(ValueError):
+        datapoint_from_record({"vector": [0.1, 0.2]})
+
+
+def test_record_without_text_or_vector_raises():
+    with pytest.raises(ValueError, match="abstract.*body.*vector"):
+        datapoint_from_record({"doc_id": "x", "title": "no content"})

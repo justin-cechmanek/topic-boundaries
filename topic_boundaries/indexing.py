@@ -17,7 +17,7 @@ class IndexedCorpus:
 def open_index(schema_path_str: str | None, redis_url: str, vector_dim: int) -> SearchIndex:
     from pathlib import Path
 
-    from src.schema_builder import load_schema_for_dims
+    from topic_boundaries.schema_builder import load_schema_for_dims
 
     schema_path = Path(__file__).resolve().parent / "schema.yml"
     if schema_path_str:

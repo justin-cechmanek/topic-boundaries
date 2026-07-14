@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-from src.documents import Datapoint
+from topic_boundaries.documents import Datapoint
 
 
 def _doc_fingerprint(dp: Datapoint) -> str:
