@@ -1,6 +1,6 @@
 # Redis Stack (RediSearch + vector indexing) for local runs.
 # Usage: docker compose up -d
-# Then:  python find_topics.py ...  (redis_url is read from config.yml; override with REDIS_URL env var)
+# The library reads redis_url from config.yml; override with the REDIS_URL env var.
 
 services:
   redis:
