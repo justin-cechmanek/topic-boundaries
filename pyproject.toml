@@ -31,9 +31,5 @@ markers = [
   "integration: exercises a live Redis Stack and/or the embedding model; skips when unavailable",
 ]
 
-[project.scripts]
-topic-boundaries = "topic_boundaries.cli:main"
-topic-boundaries-viz = "topic_boundaries.visualization.cli:main"
-
 [tool.setuptools.packages.find]
 include = ["topic_boundaries", "topic_boundaries.*"]

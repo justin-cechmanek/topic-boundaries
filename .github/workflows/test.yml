@@ -11,12 +11,10 @@ on:
 # they skip cleanly (see tests/conftest.py), so this workflow stays green while
 # still running every pure-logic test.
 #
-# TODO(redis): a managed cloud Redis (Stack/RediSearch) will be provisioned and
-# its connection string stored as the `REDIS_URL` GitHub Actions secret. Once it
-# exists, uncomment the `env: REDIS_URL:` line below — the integration + e2e
-# tests will then run against that real instance instead of skipping. Nothing
-# else needs to change; the tests already read REDIS_URL (default
-# redis://localhost:6379/0) and skip when it's unreachable.
+# Integration + e2e tests run against a managed cloud Redis (Stack/RediSearch)
+# whose connection string is stored as the `REDIS_URL` GitHub Actions secret
+# (Settings > Secrets and variables > Actions). When the secret is absent (e.g.
+# forks), REDIS_URL is empty, the tests can't reach Redis, and they skip cleanly.
 
 jobs:
   test:
@@ -29,9 +27,7 @@ jobs:
 
     env:
       HF_HOME: ${{ github.workspace }}/hf_cache
-      # Uncomment once the cloud Redis secret is added; integration/e2e tests
-      # will then hit the real service instead of skipping:
-      # REDIS_URL: ${{ secrets.REDIS_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
 
     steps:
       - name: Check out repository

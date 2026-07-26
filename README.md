@@ -31,16 +31,30 @@ A **topic boundary** is the set of datapoints (ideas, statements, concepts) that
    - `kmeans.random_state`
    - `kmeans.n_init`
 
-5. **Run** (after install, use the `topic-boundaries` console script, or `python find_topics.py` from the repo root with `PYTHONPATH=.`):
+5. **Use it from Python.** Load a source, run the pipeline, then apply a boundary method:
 
-   ```bash
-   topic-boundaries --data datasets/sample.jsonl --n-clusters 5 --method max_distance_sort --overwrite-index
+   ```python
+   from topic_boundaries import JsonlSource, Settings, run_pipeline, max_distance_rankings
+
+   settings = Settings.from_config()
+   datapoints = JsonlSource("datasets/sample.jsonl").load()
+   state = run_pipeline(
+       datapoints,
+       redis_url=settings.redis_url,
+       n_clusters=5,
+       embedding_model=settings.embedding_model,
+       schema_path=None,
+       overwrite_index=True,
+   )
+   hits = max_distance_rankings(
+       state.indexed.index, state.centroids, state.indexed.n_clusters
+   )
    ```
 
-   To use a non-default config file, pass `--config /path/to/config.yml`.
-   You can still override the configured Redis URL with `--redis-url`.
+   `Settings.from_config()` reads defaults (Redis URL, embedding model, KMeans
+   params) from `config.yml`.
 
-The package installs and imports as **`topic_boundaries`** (e.g. `from topic_boundaries import Datapoint, CsvSource, run_pipeline`). Run the CLI via the `topic-boundaries` entry point after `pip install -e .`, or `python find_topics.py` from the repo root.
+The package installs and imports as **`topic_boundaries`** (e.g. `from topic_boundaries import Datapoint, CsvSource, run_pipeline`).
 
 ## Testing
 

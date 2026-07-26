@@ -7,6 +7,7 @@ Synthetic low-dim unit vectors keep assertions deterministic without an embedder
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -14,6 +15,43 @@ import pytest
 from topic_boundaries.indexing import create_and_load, open_index, records_for_redis
 
 DIM = 8  # small dim for hand-built vectors; open_index overrides schema.yml dims
+
+
+def redis_url_from_parts(env) -> str | None:
+    """Build a REDIS_URL from Redis Cloud's discrete host/port/user/password
+    fields (as shown in its UI and stored in .env). Returns None with no host.
+    """
+    host = env.get("REDIS_HOST")
+    if not host:
+        return None
+    user = env.get("REDIS_USERNAME", "default")
+    pw = env.get("REDIS_PASSWORD", "")
+    auth = f"{user}:{pw}@" if pw else ""
+    port = env.get("REDIS_PORT", "6379")
+    # ponytail: non-TLS redis://; switch to rediss:// if the cloud DB has TLS on.
+    return f"redis://{auth}{host}:{port}"
+
+
+def _load_env() -> None:
+    """Load .env into the environment and synthesize REDIS_URL from the discrete
+    Redis fields, so integration tests hit the cloud DB. Real env vars win; an
+    already-set REDIS_URL is left untouched.
+    """
+    env_file = Path(__file__).resolve().parents[1] / ".env"
+    if env_file.is_file():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
+    if "REDIS_URL" not in os.environ:
+        url = redis_url_from_parts(os.environ)
+        if url:
+            os.environ["REDIS_URL"] = url
+
+
+_load_env()
 
 
 def vec(*components: float) -> np.ndarray:
