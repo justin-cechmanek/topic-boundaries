@@ -1,6 +1,6 @@
 """Check REDIS_URL synthesis from Redis Cloud's discrete fields."""
 
-from tests.conftest import redis_url_from_parts
+from conftest import redis_url_from_parts
 
 
 def test_builds_authed_url():
