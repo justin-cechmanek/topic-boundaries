@@ -1,7 +1,9 @@
+import inspect
 from pathlib import Path
 
 import pytest
 
+from topic_boundaries import config as cfg
 from topic_boundaries.config import Settings, _parse_n_init
 
 
@@ -81,7 +83,61 @@ def test_from_config_rejects_non_mapping_top_level(tmp_path: Path):
 
 
 def test_from_config_rejects_non_mapping_kmeans(tmp_path: Path):
-    cfg = tmp_path / "config.yml"
-    cfg.write_text("kmeans: not_a_map\n", encoding="utf-8")
+    cfg_path = tmp_path / "config.yml"
+    cfg_path.write_text("kmeans: not_a_map\n", encoding="utf-8")
     with pytest.raises(ValueError):
-        Settings.from_config(config_path=cfg)
+        Settings.from_config(config_path=cfg_path)
+
+
+def test_centralized_defaults_when_absent(_no_config_env, tmp_path: Path):
+    s = Settings.from_config(config_path=tmp_path / "missing.yml")
+    assert s.n_clusters == cfg.DEFAULT_N_CLUSTERS
+    assert s.chunk_max_chars == cfg.DEFAULT_CHUNK_MAX_CHARS
+    assert s.chunk_overlap == cfg.DEFAULT_CHUNK_OVERLAP
+    assert s.embed_batch_size == cfg.DEFAULT_EMBED_BATCH_SIZE
+    assert s.top_n_per_cluster == cfg.DEFAULT_TOP_N_PER_CLUSTER
+    assert s.k_per_centroid == cfg.DEFAULT_K_PER_CENTROID
+
+
+def test_centralized_defaults_read_from_config(_no_config_env, tmp_path: Path):
+    cfg_path = tmp_path / "config.yml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "n_clusters: 3",
+                "chunk_max_chars: 800",
+                "chunk_overlap: 50",
+                "embed_batch_size: 16",
+                "top_n_per_cluster: 7",
+                "k_per_centroid: 9",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    s = Settings.from_config(config_path=cfg_path)
+    assert (s.n_clusters, s.chunk_max_chars, s.chunk_overlap) == (3, 800, 50)
+    assert (s.embed_batch_size, s.top_n_per_cluster, s.k_per_centroid) == (16, 7, 9)
+
+
+def _default(func, param):
+    return inspect.signature(func).parameters[param].default
+
+
+def test_scattered_defaults_reference_the_central_constants():
+    """The chunk/batch defaults must live in one place, not be re-typed per site."""
+    from topic_boundaries import embedding, pdf_corpus, pipeline, sources
+
+    for func, param, expected in [
+        (pdf_corpus.chunk_text, "max_chars", cfg.DEFAULT_CHUNK_MAX_CHARS),
+        (pdf_corpus.chunk_text, "overlap", cfg.DEFAULT_CHUNK_OVERLAP),
+        (pdf_corpus.pdf_to_datapoints, "max_chars", cfg.DEFAULT_CHUNK_MAX_CHARS),
+        (pdf_corpus.pdf_to_datapoints, "overlap", cfg.DEFAULT_CHUNK_OVERLAP),
+        (sources.PdfSource.__init__, "max_chars", cfg.DEFAULT_CHUNK_MAX_CHARS),
+        (sources.PdfSource.__init__, "overlap", cfg.DEFAULT_CHUNK_OVERLAP),
+        (sources.TextDirSource.__init__, "max_chars", cfg.DEFAULT_CHUNK_MAX_CHARS),
+        (sources.TextDirSource.__init__, "overlap", cfg.DEFAULT_CHUNK_OVERLAP),
+        (embedding.HFTextEmbedder.__init__, "batch_size", cfg.DEFAULT_EMBED_BATCH_SIZE),
+        (pipeline.embed_and_cluster_datapoints, "embed_batch_size", cfg.DEFAULT_EMBED_BATCH_SIZE),
+        (pipeline.run_pipeline, "embed_batch_size", cfg.DEFAULT_EMBED_BATCH_SIZE),
+    ]:
+        assert _default(func, param) == expected, f"{func.__qualname__}({param})"

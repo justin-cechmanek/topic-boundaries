@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from topic_boundaries.config import DEFAULT_CHUNK_MAX_CHARS, DEFAULT_CHUNK_OVERLAP
 from topic_boundaries.documents import Datapoint
 
 
@@ -44,7 +45,12 @@ def normalize_whitespace(text: str) -> str:
     return "\n".join(ln for ln in lines if ln)
 
 
-def chunk_text(text: str, *, max_chars: int = 1500, overlap: int = 200) -> list[str]:
+def chunk_text(
+    text: str,
+    *,
+    max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
+    overlap: int = DEFAULT_CHUNK_OVERLAP,
+) -> list[str]:
     """Greedy chunking on paragraphs with optional overlap between chunks."""
     text = normalize_whitespace(text)
     paras = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
@@ -79,8 +85,8 @@ def chunk_text(text: str, *, max_chars: int = 1500, overlap: int = 200) -> list[
 def pdf_to_datapoints(
     path: Path,
     *,
-    max_chars: int = 1500,
-    overlap: int = 200,
+    max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
+    overlap: int = DEFAULT_CHUNK_OVERLAP,
     doc_id_prefix: str | None = None,
 ) -> list[Datapoint]:
     raw = read_pdf_text(path)

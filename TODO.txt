@@ -1,0 +1,173 @@
+TODO
+====
+
+Tasks grouped into PR-sized collections. Prefer many small PRs.
+[ ] = open, [x] = done. Each PR is independently shippable unless a
+"needs:" note says otherwise. Rough suggested order: cleanup -> config
+foundation -> features.
+
+NOTE: The CLI has been removed (commits 29f9699, 73bde8e). It was the
+SOURCES/register_source registry's only consumer, so the registry is now dead
+code — PR-C1 removes it; the earlier keep-vs-kill decision is settled (kill).
+
+
+================================================================
+CLEANUP  (small, mergeable now; complexity only, no behavior change)
+================================================================
+
+PR-C1  Prune speculative source infra  (sources.py, ~-48 lines)
+  [ ] Remove SOURCES dict + register_source: a plug-in registry whose only
+      consumer was the now-removed CLI; only a public-API test references it.
+      Source classes are already exported. (sources.py:196-210)
+  [ ] Remove DataFrameSource: duck-typed DataFrame loader used only in one
+      test; CsvSource + datapoint_from_record already cover it. (sources.py:125-157)
+  note: update test_public_api.py and test_sources.py.
+
+PR-C2  Drop plotly pass-through wrapper  (figure.py, ~-17 lines)
+  [ ] build_plotly_figure only forwards to _try_plotly unchanged. Rename
+      _try_plotly -> build_plotly_figure, delete wrapper. (figure.py:111-127)
+
+PR-C3  Simplify config n_init parsing  (config.py, ~-12 lines)
+  [ ] _parse_n_init coerces int/str/None, but yaml already types values and
+      n_init isn't read from env. Replace with km.get("n_init") or "auto".
+      (config.py:10-22,64)
+
+PR-C4  Match boundary highlights by doc_id  (core.py, ~-15 lines)
+  [ ] boundary_highlight_indices hand-rolls two title+body fingerprint helpers;
+      the centroid_neighbors branch above already matches by doc_id and boundary
+      hits carry doc_id too. Match by doc_id everywhere, delete helpers.
+      VERIFY boundary_by_cluster items include doc_id first. (core.py:12-20,38-46)
+
+PR-C5  Fix arxive_link typo  (LOW priority; touches stored datasets + 4 tests)
+  [ ] arxive_link (typo) handled as fallback in 2 places because
+      collect_datasets writes the misspelled key. Fix key to arxiv_link at the
+      writer, drop fallbacks. (documents.py:57,68; collect_datasets.py:59)
+
+
+================================================================
+CONFIG FOUNDATION  (do early; unblocks tuning + entry-point work)
+================================================================
+
+PR-F1  Centralize scattered defaults into config.Settings  (config.py:25)
+  [x] Module constants in config.py are the single source of truth; chunk
+      max_chars/overlap (was dup 4x) and embed batch_size (was dup 3x) now
+      reference them. Settings gained n_clusters, chunk_*, embed_batch_size,
+      top_n_per_cluster, k_per_centroid (read from config.yml). Guidance
+      comments added (chunk size vs model context length). Threading Settings
+      through the pipeline is PR-T5.
+
+PR-F2  Derive embedding dim from the embedder  (schema, small)
+  [ ] Embedding dim (384) hardcoded in schema.yml:9. Derive from embedder.dims
+      so swapping models doesn't require hand-editing the schema.
+
+
+================================================================
+DATA-SOURCE LOADERS  (each = one source + its tests)
+================================================================
+All loaders live in sources.py as DataSource classes -> list[Datapoint].
+Already built: JsonlSource, PdfSource(single), ArxivSource(search),
+TextDirSource(*.txt), CsvSource.
+
+PR-L1  PDF list / directory  (sources.py)
+  [ ] PdfSource takes ONE path. Accept a directory (glob **/*.pdf) and/or an
+      explicit list -> concatenate datapoints. Model on TextDirSource: loop
+      pdf_to_datapoints and merge, keep per-file source_pdf meta. + tests.
+
+PR-L2  Text / Markdown  (sources.py)
+  [ ] TextDirSource globs *.txt only. Cover *.md (extend glob or a
+      MarkdownSource that normalizes headings/code fences before chunk_text).
+  [ ] Single-file loader for one .txt/.md (TextDirSource is dir-only). + tests.
+
+PR-L3  arXiv by ID + PDF fetch  (sources.py, collect_datasets.py)
+  [ ] Load a single paper by arXiv ID or URL (not just a search query).
+  [ ] Option to fetch + parse the PDF, not only abstract/metadata from the
+      Atom feed. Reuse pdf_to_datapoints once downloaded. + tests.
+
+PR-L4  Generic loader + docs  (sources.py, README)
+  [ ] Extend the csv/df id/body/meta/vector mapping to a generic JSON or
+      dict-iterable source.
+  [ ] Document the DataSource protocol in README.
+
+
+================================================================
+VISUALIZATION  (topic_boundaries/visualization/)
+================================================================
+
+PR-V1  3D projection  (core.py, figure.py)
+  [ ] project_to_2d hardcodes n_components=2 (core.py:49). Add a 3D path ->
+      plotly Scatter3d.
+
+PR-V2  Pluggable reducers  (core.py)  needs: V1 recommended
+  [ ] Only PCA + t-SNE (core.py:60,86). Add UMAP; allow precomputed-coords
+      passthrough.
+
+PR-V3  Fix t-SNE handling  (core.py)
+  [ ] Centroids faked as 2D means of members (core.py:77-85); empty clusters
+      -> NaN dropped at figure.py:79. Project centroids properly or document.
+  [ ] Runs on full-D with no point cap (core.py:76). Pre-PCA-to-50D speedup +
+      guard/warning for large n (t-SNE is O(n^2)).
+
+PR-V4  Scale rendering to large n / many clusters  (figure.py)
+  [ ] Palette recycles past 10 clusters (figure.py:41). Use a scalable colormap.
+  [ ] Per-point traces + escaped HTML hover (figure.py:36-77). Use Scattergl
+      (WebGL) + optional decimation/sampling.
+
+PR-V5  Static PNG export  (figure.py)
+  [ ] Add matplotlib/PNG export for docs/CI; today plotly-only.
+
+
+================================================================
+PERFORMANCE IN HIGH DIMENSIONS
+================================================================
+
+PR-P1  Replace brute-force cluster scans  (max_distance_sort, cross_boundary,
+       centroid_neighbors)
+  [ ] num_results=whole cluster + hybrid_policy="ADHOC_BF" defeats the HNSW
+      index (max_distance_sort:52-62, cross_boundary:35, centroid_neighbors:31).
+      Use server-side top-k / a "farthest" query instead of pulling full
+      clusters to the client.
+
+PR-P2  Batch/vectorize per-cluster loops  (all boundary methods)
+  [ ] Python for c in range(n_clusters) loops (convex_hull:46, voronoi:88,
+      max_distance_sort:87, cross_boundary:61). Batch/vectorize.
+
+PR-P3  Convex-hull high-D handling  (convex_hull/boundaries.py:11,28-35)
+  [ ] Caps to max_hull_dim=12 then silently falls back to 2 PC1 extrema on ANY
+      exception. Log how often the fallback fires; consider dropping hull for
+      high-D.
+
+PR-P4  Chunk Voronoi distance matrix  (voronoi_boundary/boundaries.py:47-51)
+  [ ] Materializes a dense (n_samples, n_clusters) matrix. Chunk for large n.
+
+PR-P5  Resolve metric inconsistency  (investigation / possibly doc-only)
+  [ ] KMeans/Voronoi use Euclidean; index + max_distance_sort use cosine. Pick
+      one or document why they differ.
+
+
+================================================================
+TUNING
+================================================================
+
+PR-T1  Boundary-quality metric  (enables T2 + T4)
+  [ ] No quality metric anywhere. Add cluster-separation / silhouette score to
+      judge n_clusters and compare boundary methods.
+
+PR-T2  Auto k-selection  (needs: T1)
+  [ ] n_clusters is a required manual arg (pipeline.py:26, clustering.py:9).
+      Add elbow/silhouette auto-selection.
+
+PR-T3  Alternative clustering algorithms  (clustering.py:19)
+  [ ] KMeans-only forces spherical clusters + known k. Offer
+      HDBSCAN/agglomerative.
+
+PR-T4  Parameter-sweep harness  (needs: T1)
+  [ ] Small sweep over n_clusters x chunk size x model, scored by the T1 metric.
+
+PR-T5  Configurable entry point  (needs: F1)
+  [ ] Defaults effectively live in test code (test_viz.py, test_pipeline_e2e.py).
+      Surface a configurable entry point.
+
+PR-T6  Document magic numbers  (trivial, doc-only)
+  [ ] Add rationale for max_hull_dim=12 (convex_hull:11), top_n_per_cluster /
+      k_per_centroid defaults (voronoi:72, cross_boundary:58) — relate to
+      cluster size.
