@@ -9,6 +9,6 @@ def test_public_api_names_resolve():
 
 def test_key_symbols_are_the_right_kind():
     assert callable(tb.run_pipeline)
-    assert isinstance(tb.SOURCES, dict) and "csv" in tb.SOURCES
+    assert callable(tb.CsvSource)
     # aliased rankers from two different modules
     assert tb.max_distance_rankings is not tb.voronoi_rankings

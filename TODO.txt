@@ -16,10 +16,10 @@ CLEANUP  (small, mergeable now; complexity only, no behavior change)
 ================================================================
 
 PR-C1  Prune speculative source infra  (sources.py, ~-48 lines)
-  [ ] Remove SOURCES dict + register_source: a plug-in registry whose only
+  [x] Remove SOURCES dict + register_source: a plug-in registry whose only
       consumer was the now-removed CLI; only a public-API test references it.
       Source classes are already exported. (sources.py:196-210)
-  [ ] Remove DataFrameSource: duck-typed DataFrame loader used only in one
+  [x] Remove DataFrameSource: duck-typed DataFrame loader used only in one
       test; CsvSource + datapoint_from_record already cover it. (sources.py:125-157)
   note: update test_public_api.py and test_sources.py.
 
