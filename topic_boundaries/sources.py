@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Iterable, Protocol, runtime_checkable
 
+from topic_boundaries.config import DEFAULT_CHUNK_MAX_CHARS, DEFAULT_CHUNK_OVERLAP
 from topic_boundaries.documents import Datapoint, datapoint_from_record
 from topic_boundaries.pdf_corpus import chunk_text, pdf_to_datapoints
 
@@ -67,7 +68,13 @@ class JsonlSource:
 
 
 class PdfSource:
-    def __init__(self, path: str | Path, *, max_chars: int = 1500, overlap: int = 200):
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
+        overlap: int = DEFAULT_CHUNK_OVERLAP,
+    ):
         self.path = Path(path)
         self.max_chars = max_chars
         self.overlap = overlap
@@ -165,8 +172,8 @@ class TextDirSource:
         path: str | Path,
         *,
         glob: str = "**/*.txt",
-        max_chars: int = 1500,
-        overlap: int = 200,
+        max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
+        overlap: int = DEFAULT_CHUNK_OVERLAP,
     ):
         self.path = Path(path)
         self.glob = glob

@@ -11,6 +11,7 @@ from typing import Protocol, runtime_checkable
 
 import numpy as np
 
+from topic_boundaries.config import DEFAULT_EMBED_BATCH_SIZE
 from topic_boundaries.documents import Datapoint
 
 
@@ -29,7 +30,7 @@ class Embedder(Protocol):
 class HFTextEmbedder:
     """Embed ``datapoint.body`` with a sentence-transformers model (the default)."""
 
-    def __init__(self, model: str, *, batch_size: int = 64):
+    def __init__(self, model: str, *, batch_size: int = DEFAULT_EMBED_BATCH_SIZE):
         # Imported lazily so precomputed-vector users don't pay the heavy import.
         from redisvl.utils.vectorize import HFTextVectorizer
 

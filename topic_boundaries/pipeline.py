@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from topic_boundaries.clustering import cluster_counts, cluster_embeddings
+from topic_boundaries.config import DEFAULT_EMBED_BATCH_SIZE
 from topic_boundaries.documents import Datapoint
 from topic_boundaries.embedding import Embedder, HFTextEmbedder
 from topic_boundaries.indexing import IndexedCorpus, create_and_load, open_index, records_for_redis
@@ -26,7 +27,7 @@ def embed_and_cluster_datapoints(
     n_clusters: int,
     embedding_model: str | None = None,
     embedder: Embedder | None = None,
-    embed_batch_size: int = 64,
+    embed_batch_size: int = DEFAULT_EMBED_BATCH_SIZE,
     kmeans_random_state: int = 42,
     kmeans_n_init: int | str = "auto",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
@@ -65,7 +66,7 @@ def run_pipeline(
     embedder: Embedder | None = None,
     schema_path: str | None,
     overwrite_index: bool,
-    embed_batch_size: int = 64,
+    embed_batch_size: int = DEFAULT_EMBED_BATCH_SIZE,
     kmeans_random_state: int = 42,
     kmeans_n_init: int | str = "auto",
 ) -> PipelineState:
