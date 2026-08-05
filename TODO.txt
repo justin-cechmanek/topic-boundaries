@@ -79,9 +79,12 @@ PR-L1  PDF list / directory  (sources.py)
       pdf_to_datapoints and merge, keep per-file source_pdf meta. + tests.
 
 PR-L2  Text / Markdown  (sources.py)
-  [ ] TextDirSource globs *.txt only. Cover *.md (extend glob or a
+  [x] TextDirSource globs *.txt only. Cover *.md (extend glob or a
       MarkdownSource that normalizes headings/code fences before chunk_text).
-  [ ] Single-file loader for one .txt/.md (TextDirSource is dir-only). + tests.
+      Done: default glob covers .txt+.md; markdown headings/code-fence markers
+      normalized before chunk_text.
+  [x] Single-file loader for one .txt/.md (TextDirSource is dir-only). + tests.
+      Done: added TextFileSource.
 
 PR-L3  arXiv by ID + PDF fetch  (sources.py, collect_datasets.py)
   [ ] Load a single paper by arXiv ID or URL (not just a search query).

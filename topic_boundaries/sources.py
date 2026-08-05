@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from pathlib import Path
 from typing import Any, Iterable, Protocol, runtime_checkable
 
@@ -161,14 +162,48 @@ class CsvSource:
         ]
 
 
+# Strip Markdown syntax that adds embedding noise: ATX heading markers (keep the
+# heading text) and code-fence marker lines (keep the code text between them).
+_MD_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+", re.MULTILINE)
+_MD_FENCE = re.compile(r"^\s*(?:```|~~~).*$", re.MULTILINE)
+
+
+def _read_text(file: Path) -> str:
+    text = file.read_text(encoding="utf-8", errors="replace")
+    if file.suffix.lower() in (".md", ".markdown"):
+        text = _MD_FENCE.sub("", text)
+        text = _MD_HEADING.sub("", text)
+    return text
+
+
+def _text_datapoints(
+    file: Path, prefix: str, *, max_chars: int, overlap: int
+) -> list[Datapoint]:
+    """Chunk one .txt/.md file into Datapoints (shared by dir + single-file loaders)."""
+    return [
+        Datapoint(
+            doc_id=f"{prefix}#chunk{i}",
+            body=chunk,
+            meta={"source_file": str(file.resolve()), "chunk_index": i},
+        )
+        for i, chunk in enumerate(
+            chunk_text(_read_text(file), max_chars=max_chars, overlap=overlap)
+        )
+    ]
+
+
 class TextDirSource:
-    """A directory of text files; each file is chunked like the PDF loader."""
+    """A directory of .txt/.md files; each file is chunked like the PDF loader.
+
+    ``glob`` accepts one pattern or several; the default covers both text and
+    Markdown. Markdown headings/code fences are normalized before chunking.
+    """
 
     def __init__(
         self,
         path: str | Path,
         *,
-        glob: str = "**/*.txt",
+        glob: str | Iterable[str] = ("**/*.txt", "**/*.md"),
         max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
         overlap: int = DEFAULT_CHUNK_OVERLAP,
     ):
@@ -178,20 +213,36 @@ class TextDirSource:
         self.overlap = overlap
 
     def load(self) -> list[Datapoint]:
+        patterns = [self.glob] if isinstance(self.glob, str) else list(self.glob)
+        files = sorted({f for pat in patterns for f in self.path.glob(pat)})
         out: list[Datapoint] = []
-        for file in sorted(self.path.glob(self.glob)):
+        for file in files:
             if not file.is_file():
                 continue
-            text = file.read_text(encoding="utf-8", errors="replace")
             rel = file.relative_to(self.path)
-            for i, chunk in enumerate(
-                chunk_text(text, max_chars=self.max_chars, overlap=self.overlap)
-            ):
-                out.append(
-                    Datapoint(
-                        doc_id=f"{rel}#chunk{i}",
-                        body=chunk,
-                        meta={"source_file": str(file.resolve()), "chunk_index": i},
-                    )
+            out.extend(
+                _text_datapoints(
+                    file, str(rel), max_chars=self.max_chars, overlap=self.overlap
                 )
+            )
         return out
+
+
+class TextFileSource:
+    """A single .txt/.md file, chunked like TextDirSource (which is dir-only)."""
+
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
+        overlap: int = DEFAULT_CHUNK_OVERLAP,
+    ):
+        self.path = Path(path)
+        self.max_chars = max_chars
+        self.overlap = overlap
+
+    def load(self) -> list[Datapoint]:
+        return _text_datapoints(
+            self.path, self.path.stem, max_chars=self.max_chars, overlap=self.overlap
+        )
