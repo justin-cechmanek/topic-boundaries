@@ -54,11 +54,19 @@ def project_to_2d(
     method: str,
     random_state: int,
     tsne_perplexity: float,
+    n_components: int = 2,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Returns (xy_docs, xy_centroids), each shape (n, 2)."""
+    """Project docs + centroids to 2D or 3D.
+
+    Returns (xy_docs, xy_centroids), each shape (n, n_components).
+    ``n_components`` must be 2 or 3 (build_plotly_figure picks Scatter vs
+    Scatter3d from the coordinate width).
+    """
+    if n_components not in (2, 3):
+        raise ValueError(f"n_components must be 2 or 3, got {n_components}")
     m = method.lower().strip()
     if m == "pca":
-        pca = PCA(n_components=2, random_state=random_state)
+        pca = PCA(n_components=n_components, random_state=random_state)
         xy_docs = pca.fit_transform(vectors)
         xy_centroids = pca.transform(centroids)
         return xy_docs.astype(np.float64), xy_centroids.astype(np.float64)
@@ -67,15 +75,15 @@ def project_to_2d(
         perp = float(min(tsne_perplexity, max(5.0, (n - 1) / 3.0)))
         perp = min(perp, max(1.5, n - 1 - 1e-6))
         tsne = TSNE(
-            n_components=2,
+            n_components=n_components,
             random_state=random_state,
             perplexity=perp,
             init="pca",
             learning_rate="auto",
         )
         xy_docs = tsne.fit_transform(vectors)
-        # t-SNE has no transform; place centroids at KMeans member means in 2D.
-        xy_centroids = np.zeros((centroids.shape[0], 2), dtype=np.float64)
+        # t-SNE has no transform; place centroids at KMeans member means.
+        xy_centroids = np.zeros((centroids.shape[0], n_components), dtype=np.float64)
         for c in range(centroids.shape[0]):
             mask = labels == c
             if mask.any():
