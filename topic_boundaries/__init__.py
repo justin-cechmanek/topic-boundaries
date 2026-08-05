@@ -17,6 +17,7 @@ from topic_boundaries.pipeline import (
     run_pipeline,
 )
 from topic_boundaries.sources import (
+    ArxivPaperSource,
     ArxivSource,
     CsvSource,
     DataSource,
@@ -58,6 +59,7 @@ __all__ = [
     "JsonlSource",
     "PdfSource",
     "ArxivSource",
+    "ArxivPaperSource",
     "CsvSource",
     "TextDirSource",
     "TextFileSource",

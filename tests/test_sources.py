@@ -4,7 +4,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from topic_boundaries import collect_datasets
 from topic_boundaries.sources import (
+    ArxivPaperSource,
     CsvSource,
     PdfSource,
     TextDirSource,
@@ -141,3 +143,32 @@ def test_pdf_source_explicit_list_concatenates(tmp_path):
     assert prefixes == {"a", "b"}
     only_a = PdfSource(a, max_chars=500).load()
     assert len(dps) == 2 * len(only_a)
+
+
+def test_arxiv_paper_source_metadata(monkeypatch):
+    # Substitute only the network hop; feed a real parsed record through.
+    record = {
+        "title": "A Study of Topic Boundaries",
+        "abstract": "We investigate topic boundaries in embeddings.",
+        "arxiv_link": "http://arxiv.org/abs/2403.15001v1",
+    }
+    monkeypatch.setattr(collect_datasets, "fetch_paper", lambda _: record)
+    dps = ArxivPaperSource("https://arxiv.org/abs/2403.15001").load()
+    assert len(dps) == 1
+    assert dps[0].body == record["abstract"]
+
+
+def test_arxiv_paper_source_fetch_pdf(monkeypatch):
+    src = _real_pdf()
+    # Substitute only the download with a copy of the real fixture PDF.
+    monkeypatch.setattr(
+        collect_datasets,
+        "download_pdf",
+        lambda _id, dest: (shutil.copy(src, dest), dest)[1],
+    )
+    dps = ArxivPaperSource(
+        "https://arxiv.org/abs/2403.15001", fetch_pdf=True, max_chars=500
+    ).load()
+    assert len(dps) >= 5
+    assert all(d.doc_id.startswith("2403.15001#chunk") for d in dps)
+    assert dps[0].meta["chunk_index"] == 0

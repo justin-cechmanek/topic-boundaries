@@ -87,9 +87,11 @@ PR-L2  Text / Markdown  (sources.py)
       Done: added TextFileSource.
 
 PR-L3  arXiv by ID + PDF fetch  (sources.py, collect_datasets.py)
-  [ ] Load a single paper by arXiv ID or URL (not just a search query).
-  [ ] Option to fetch + parse the PDF, not only abstract/metadata from the
+  [x] Load a single paper by arXiv ID or URL (not just a search query).
+      Done: normalize_arxiv_id + fetch_paper; ArxivPaperSource(id_or_url).
+  [x] Option to fetch + parse the PDF, not only abstract/metadata from the
       Atom feed. Reuse pdf_to_datapoints once downloaded. + tests.
+      Done: download_pdf + ArxivPaperSource(..., fetch_pdf=True).
 
 PR-L4  Generic loader + docs  (sources.py, README)
   [ ] Extend the csv/df id/body/meta/vector mapping to a generic JSON or
