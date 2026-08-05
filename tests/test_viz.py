@@ -341,17 +341,14 @@ def test_export_png_3d(tmp_path):
 
 
 def test_results_json_loads_with_viz_helpers():
+    # Uses committed fixtures (no skip): a stored results JSON + its dataset.
     root = Path(__file__).resolve().parents[1]
-    path = root / "results" / "ml_ai_100_max_distance_sort_n10_top5.json"
-    if not path.is_file():
-        pytest.skip(f"missing results fixture: {path}")
-    with path.open(encoding="utf-8") as f:
+    with (root / "results" / "ml_ai_100_cross_boundary_n10_top5.json").open(
+        encoding="utf-8"
+    ) as f:
         data = json.load(f)
-    sample = root / "datasets" / "arxiv" / "ml_ai_100.jsonl"
-    if not sample.is_file():
-        pytest.skip(f"missing dataset fixture: {sample}")
     from topic_boundaries.documents import load_jsonl
 
-    dps = load_jsonl(sample)
+    dps = load_jsonl(root / "datasets" / "arxiv" / "ml_ai_100.jsonl")
     hi = boundary_highlight_indices(data, dps)
     assert len(hi) > 0

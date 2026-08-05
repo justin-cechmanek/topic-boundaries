@@ -7,14 +7,14 @@ on:
   workflow_dispatch:
 
 # Testing philosophy: no mocks — tests exercise real code and real services.
-# The `integration`-marked tests need a live Redis Stack; when none is reachable
-# they skip cleanly (see tests/conftest.py), so this workflow stays green while
-# still running every pure-logic test.
+# To keep CI running (not skipping) the full suite, this workflow installs the
+# optional extras (viz: plotly/umap/matplotlib) and runs a Redis Stack service
+# container, so both the visualization and the vector-index integration tests
+# execute here. The in-test skips (importorskip, Redis-unreachable) remain so
+# local runs without those extras still pass.
 #
-# Integration + e2e tests run against a managed cloud Redis (Stack/RediSearch)
-# whose connection string is stored as the `REDIS_URL` GitHub Actions secret
-# (Settings > Secrets and variables > Actions). When the secret is absent (e.g.
-# forks), REDIS_URL is empty, the tests can't reach Redis, and they skip cleanly.
+# REDIS_URL prefers the managed cloud Redis secret when set; otherwise it points
+# at the service container below, so integration tests run even on forks.
 
 jobs:
   test:
@@ -27,7 +27,24 @@ jobs:
 
     env:
       HF_HOME: ${{ github.workspace }}/hf_cache
-      REDIS_URL: ${{ secrets.REDIS_URL }}
+      # umap-learn's numba backend needs a writable cache dir, else it errors
+      # with "no locator available" on some runners.
+      NUMBA_CACHE_DIR: ${{ github.workspace }}/numba_cache
+      # Prefer the managed cloud Redis secret; otherwise use the service below so
+      # the integration tests run (not skip) even on forks / without the secret.
+      REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379/0' }}
+
+    # Redis Stack (RediSearch) so the vector-index integration tests actually run.
+    services:
+      redis:
+        image: redis/redis-stack-server:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Check out repository
@@ -50,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,corpus]"
+          pip install -e ".[dev,corpus,viz]"
 
       - name: Run tests
         run: pytest -v --cov=topic_boundaries --cov-report=term-missing
