@@ -56,7 +56,7 @@ def parse_entry(entry: ET.Element) -> dict:
         "title": title,
         "abstract": summary,
         "subjects": subjects,
-        "arxive_link": arxiv_link,
+        "arxiv_link": arxiv_link,
     }
 
 

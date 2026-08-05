@@ -23,7 +23,7 @@ def test_parse_entry_extracts_fields():
     assert rec["title"] == "A Study of Topic Boundaries"
     assert rec["abstract"] == "We investigate topic boundaries in embeddings."
     assert rec["publication_date"] == "2024-03-15"  # truncated to YYYY-MM-DD
-    assert rec["arxive_link"] == "http://arxiv.org/abs/2403.15001v1"
+    assert rec["arxiv_link"] == "http://arxiv.org/abs/2403.15001v1"
     assert rec["authors"] == ["Alice Chen", "Bob Kumar"]
     assert rec["subjects"] == ["cs.CL", "cs.LG"]
 
