@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import numpy as np
@@ -341,14 +340,22 @@ def test_export_png_3d(tmp_path):
 
 
 def test_results_json_loads_with_viz_helpers():
-    # Uses committed fixtures (no skip): a stored results JSON + its dataset.
+    # results/ is gitignored (generated artifacts), so build a realistic
+    # boundary_by_cluster payload from the committed dataset's real records and
+    # confirm the viz helper matches them back by title+abstract fingerprint.
     root = Path(__file__).resolve().parents[1]
-    with (root / "results" / "ml_ai_100_cross_boundary_n10_top5.json").open(
-        encoding="utf-8"
-    ) as f:
-        data = json.load(f)
     from topic_boundaries.documents import load_jsonl
 
     dps = load_jsonl(root / "datasets" / "arxiv" / "ml_ai_100.jsonl")
+    picked = dps[:2]
+    data = {
+        "method": "cross_boundary",
+        "boundary_by_cluster": [
+            [
+                {"title": str(dp.meta.get("title") or ""), "abstract": dp.body}
+                for dp in picked
+            ]
+        ],
+    }
     hi = boundary_highlight_indices(data, dps)
-    assert len(hi) > 0
+    assert hi == {0, 1}
