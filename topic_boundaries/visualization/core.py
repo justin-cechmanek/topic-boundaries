@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
@@ -7,6 +8,12 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
 from topic_boundaries.documents import Datapoint
+
+# t-SNE tuning. Reduce features to TSNE_PRE_PCA_DIM before t-SNE so the pairwise
+# neighbor search is cheaper (sklearn's own guidance); warn past
+# TSNE_MAX_RECOMMENDED points since t-SNE is O(n^2).
+TSNE_PRE_PCA_DIM = 50
+TSNE_MAX_RECOMMENDED = 10_000
 
 
 def _doc_fingerprint(dp: Datapoint) -> str:
@@ -95,9 +102,25 @@ def project_to_2d(
         xy_centroids = pca.transform(centroids)
         return xy_docs.astype(np.float64), xy_centroids.astype(np.float64)
     if m == "tsne":
-        n = len(vectors)
-        perp = float(min(tsne_perplexity, max(5.0, (n - 1) / 3.0)))
-        perp = min(perp, max(1.5, n - 1 - 1e-6))
+        n_docs = len(vectors)
+        if n_docs > TSNE_MAX_RECOMMENDED:
+            warnings.warn(
+                f"t-SNE is O(n^2); projecting {n_docs} points will be slow. "
+                "Consider method='umap' or sampling the points first.",
+                stacklevel=2,
+            )
+        # t-SNE has no transform(), so embed docs + centroids jointly: centroids
+        # land in the same space as real points (no faked means, no NaN for
+        # empty clusters — a KMeans centroid always has a position).
+        stacked = np.vstack([vectors, centroids])
+        if stacked.shape[1] > TSNE_PRE_PCA_DIM:
+            pre_k = min(TSNE_PRE_PCA_DIM, stacked.shape[0] - 1)
+            stacked = PCA(
+                n_components=pre_k, random_state=random_state
+            ).fit_transform(stacked)
+        n_join = stacked.shape[0]
+        perp = float(min(tsne_perplexity, max(5.0, (n_join - 1) / 3.0)))
+        perp = min(perp, max(1.5, n_join - 1 - 1e-6))
         tsne = TSNE(
             n_components=n_components,
             random_state=random_state,
@@ -105,16 +128,8 @@ def project_to_2d(
             init="pca",
             learning_rate="auto",
         )
-        xy_docs = tsne.fit_transform(vectors)
-        # t-SNE has no transform; place centroids at KMeans member means.
-        xy_centroids = np.zeros((centroids.shape[0], n_components), dtype=np.float64)
-        for c in range(centroids.shape[0]):
-            mask = labels == c
-            if mask.any():
-                xy_centroids[c] = xy_docs[mask].mean(axis=0)
-            else:
-                xy_centroids[c] = np.nan
-        return xy_docs.astype(np.float64), xy_centroids
+        xy = tsne.fit_transform(stacked)
+        return xy[:n_docs].astype(np.float64), xy[n_docs:].astype(np.float64)
     raise ValueError(
         f"Unknown projection: {method!r} (use pca, tsne, umap, or precomputed)"
     )
