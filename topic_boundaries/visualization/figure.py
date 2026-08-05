@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import warnings
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -161,3 +162,91 @@ def build_plotly_figure(
         fig.update_xaxes(title="dim 1")
         fig.update_yaxes(title="dim 2", scaleanchor="x", scaleratio=1)
     return fig
+
+
+def export_png(
+    labels: np.ndarray,
+    highlight: set[int],
+    xy_docs: np.ndarray,
+    xy_centroids: np.ndarray,
+    path: str | Path,
+    *,
+    title: str = "",
+    dpi: int = 150,
+) -> Path:
+    """Render the projection to a static PNG with matplotlib (no browser/kaleido).
+
+    For docs and CI where the interactive plotly figure can't be captured.
+    Follows build_plotly_figure's encoding: cluster color, larger black-edged
+    markers for highlighted docs, black 'x' centroids; 2D or 3D by coord width.
+    Self-contained (matplotlib only, no plotly).
+    """
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")  # headless backend; no display needed
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        raise ImportError(
+            "PNG export requires matplotlib. Install with: pip install matplotlib "
+            'or pip install -e ".[viz]"'
+        ) from e
+
+    is_3d = xy_docs.shape[1] >= 3
+    n_clusters = int(labels.max()) + 1 if labels.size else 0
+    if n_clusters <= len(_PALETTE):
+        colors: list[Any] = _PALETTE[:n_clusters]
+    else:  # scale past the palette using a matplotlib colormap (no plotly here)
+        cmap = plt.get_cmap("turbo")
+        colors = [cmap(i / (n_clusters - 1)) for i in range(n_clusters)]
+
+    fig = plt.figure(figsize=(9, 6))
+    ax = fig.add_subplot(111, projection="3d" if is_3d else None)
+
+    def cols(arr: np.ndarray, subset: Any) -> list[np.ndarray]:
+        pts = arr[subset]
+        return [pts[:, i] for i in range(3 if is_3d else 2)]
+
+    for c in range(n_clusters):
+        idx = np.where(labels == c)[0]
+        if idx.size == 0:
+            continue
+        regular = [i for i in idx.tolist() if i not in highlight]
+        marked = [i for i in idx.tolist() if i in highlight]
+        for subset, size, edge, label in (
+            (regular, 18, "none", f"cluster {c}"),
+            (marked, 70, "black", None),
+        ):
+            if not subset:
+                continue
+            ax.scatter(
+                *cols(xy_docs, subset),
+                s=size,
+                color=[colors[c]],
+                edgecolors=edge,
+                linewidths=0.6,
+                label=label,
+            )
+
+    valid = ~np.isnan(xy_centroids).any(axis=1)
+    if valid.any():
+        ax.scatter(
+            *cols(xy_centroids, valid),
+            s=140,
+            color="black",
+            marker="x",
+            linewidths=2,
+            label="centroids",
+        )
+
+    ax.set_title(title)
+    ax.set_xlabel("dim 1")
+    ax.set_ylabel("dim 2")
+    if is_3d:
+        ax.set_zlabel("dim 3")
+    ax.legend(loc="best", fontsize="small", framealpha=0.8)
+    fig.tight_layout()
+    out = Path(path)
+    fig.savefig(out, dpi=dpi)
+    plt.close(fig)
+    return out

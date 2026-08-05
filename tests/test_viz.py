@@ -306,6 +306,33 @@ def test_build_figure_decimates_but_keeps_highlights():
     assert highlight <= rendered  # every highlighted point survives decimation
 
 
+def test_export_png_writes_real_image(tmp_path):
+    pytest.importorskip("matplotlib")
+    from topic_boundaries.visualization import export_png
+
+    n = 12
+    labels = np.array([i % 3 for i in range(n)])
+    xy = np.random.default_rng(0).standard_normal((n, 2))
+    cents = np.random.default_rng(1).standard_normal((3, 2))
+    out = export_png(labels, {1, 4}, xy, cents, tmp_path / "plot.png", title="t")
+    assert out.is_file()
+    # real PNG: 8-byte magic header, non-trivial size
+    assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    assert out.stat().st_size > 1000
+
+
+def test_export_png_3d(tmp_path):
+    pytest.importorskip("matplotlib")
+    from topic_boundaries.visualization import export_png
+
+    n = 9
+    labels = np.array([i % 3 for i in range(n)])
+    xy = np.random.default_rng(0).standard_normal((n, 3))
+    cents = np.random.default_rng(1).standard_normal((3, 3))
+    out = export_png(labels, set(), xy, cents, tmp_path / "plot3d.png")
+    assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
 def test_results_json_loads_with_viz_helpers():
     root = Path(__file__).resolve().parents[1]
     path = root / "results" / "ml_ai_100_max_distance_sort_n10_top5.json"

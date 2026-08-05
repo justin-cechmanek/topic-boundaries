@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-cov>=5.0"]
 corpus = ["pypdf>=4.0"]
-viz = ["plotly>=5.18", "umap-learn>=0.5"]
+viz = ["plotly>=5.18", "umap-learn>=0.5", "matplotlib>=3.7"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
