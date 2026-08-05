@@ -113,8 +113,11 @@ PR-V1  3D projection  (core.py, figure.py)
       picks Scatter/Scatter3d from the coordinate width.
 
 PR-V2  Pluggable reducers  (core.py)  needs: V1 recommended
-  [ ] Only PCA + t-SNE (core.py:60,86). Add UMAP; allow precomputed-coords
+  [x] Only PCA + t-SNE (core.py:60,86). Add UMAP; allow precomputed-coords
       passthrough.
+      Done: method="umap" (lazy umap-learn import, transform() projects
+      centroids); method="precomputed" returns vectors/centroids as-is.
+      umap-learn added to the [viz] extra.
 
 PR-V3  Fix t-SNE handling  (core.py)
   [ ] Centroids faked as 2D means of members (core.py:77-85); empty clusters
