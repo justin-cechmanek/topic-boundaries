@@ -22,7 +22,9 @@ from topic_boundaries.sources import (
     CsvSource,
     DataSource,
     JsonlSource,
+    JsonSource,
     PdfSource,
+    RecordsSource,
     TextDirSource,
     TextFileSource,
 )
@@ -61,6 +63,8 @@ __all__ = [
     "ArxivSource",
     "ArxivPaperSource",
     "CsvSource",
+    "JsonSource",
+    "RecordsSource",
     "TextDirSource",
     "TextFileSource",
     "nearest_to_centroid",

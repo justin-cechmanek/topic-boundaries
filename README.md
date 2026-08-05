@@ -56,6 +56,38 @@ A **topic boundary** is the set of datapoints (ideas, statements, concepts) that
 
 The package installs and imports as **`topic_boundaries`** (e.g. `from topic_boundaries import Datapoint, CsvSource, run_pipeline`).
 
+## Data sources
+
+A **data source** is anything that produces a `list[Datapoint]` for the
+pipeline. The protocol is one method:
+
+```python
+from typing import Protocol
+from topic_boundaries import Datapoint
+
+class DataSource(Protocol):
+    def load(self) -> list[Datapoint]: ...
+```
+
+Implement `load()` on your own class for anything exotic; a `Datapoint` needs a
+`doc_id` and either a `body` (to embed) or a precomputed `vector`. Built-ins in
+`topic_boundaries.sources`:
+
+| Source | Loads |
+| --- | --- |
+| `JsonlSource(path)` | Line-delimited JSON (arXiv/`collect_datasets` schema or generic) |
+| `JsonSource(path, id_col=..., body_col=..., meta_cols=..., vector_col=...)` | A JSON file holding an array of objects |
+| `RecordsSource(records, id_col=..., ...)` | Any in-memory iterable of dicts (same mapping as CSV/JSON) |
+| `CsvSource(path, id_col=..., ...)` | CSV rows (stdlib `csv`, no pandas) |
+| `PdfSource(path_or_dir_or_list)` | One PDF, a directory (`**/*.pdf`), or an explicit list |
+| `TextDirSource(dir)` / `TextFileSource(file)` | `.txt`/`.md` (Markdown headings/code fences normalized) |
+| `ArxivSource(query)` / `ArxivPaperSource(id_or_url, fetch_pdf=...)` | arXiv search, or one paper by id/URL (abstract or full PDF) |
+
+The `id_col`/`body_col`/`meta_cols`/`vector_col` mapping is shared by
+`CsvSource`, `JsonSource`, and `RecordsSource`: `id_col` → `doc_id`, `body_col`
+→ embedded text, `meta_cols` → passed-through metadata, `vector_col` →
+precomputed vector (a JSON array or comma/space-separated string).
+
 ## Testing
 
 ```bash

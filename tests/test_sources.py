@@ -5,10 +5,14 @@ import numpy as np
 import pytest
 
 from topic_boundaries import collect_datasets
+import json
+
 from topic_boundaries.sources import (
     ArxivPaperSource,
     CsvSource,
+    JsonSource,
     PdfSource,
+    RecordsSource,
     TextDirSource,
     TextFileSource,
     _parse_vector,
@@ -49,6 +53,39 @@ def test_csv_source_maps_columns(tmp_path):
     assert dps[0].body == "hello world"
     assert dps[0].meta["topic"] == "greetings"
     assert dps[0].vector is None
+
+
+def test_records_source_maps_dicts_with_native_values(tmp_path):
+    records = [
+        {"id": "a", "text": "hello world", "topic": "greetings", "emb": [1.0, 0.0]},
+        {"id": "b", "text": "second row", "topic": "other", "emb": [0.0, 1.0]},
+    ]
+    dps = RecordsSource(
+        records, id_col="id", body_col="text", meta_cols=["topic"], vector_col="emb"
+    ).load()
+    assert [d.doc_id for d in dps] == ["a", "b"]
+    assert dps[0].body == "hello world"
+    assert dps[0].meta["topic"] == "greetings"
+    # native list (not a string) parses straight through
+    np.testing.assert_array_equal(dps[0].vector, np.array([1.0, 0.0], dtype=np.float32))
+
+
+def test_json_source_reads_array_file(tmp_path):
+    p = tmp_path / "data.json"
+    p.write_text(
+        json.dumps([{"id": "x", "text": "alpha"}, {"id": "y", "text": "beta"}]),
+        encoding="utf-8",
+    )
+    dps = JsonSource(p, id_col="id", body_col="text").load()
+    assert [d.doc_id for d in dps] == ["x", "y"]
+    assert dps[1].body == "beta"
+
+
+def test_json_source_rejects_non_array(tmp_path):
+    p = tmp_path / "obj.json"
+    p.write_text('{"id": "x"}', encoding="utf-8")
+    with pytest.raises(ValueError):
+        JsonSource(p, id_col="id").load()
 
 
 def test_csv_source_with_precomputed_vectors(tmp_path):
