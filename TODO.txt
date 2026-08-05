@@ -130,9 +130,13 @@ PR-V3  Fix t-SNE handling  (core.py)
       past TSNE_MAX_RECOMMENDED=10k points.
 
 PR-V4  Scale rendering to large n / many clusters  (figure.py)
-  [ ] Palette recycles past 10 clusters (figure.py:41). Use a scalable colormap.
-  [ ] Per-point traces + escaped HTML hover (figure.py:36-77). Use Scattergl
+  [x] Palette recycles past 10 clusters (figure.py:41). Use a scalable colormap.
+      Done: _cluster_colors samples the Turbo scale past the 10-color palette
+      so any k gets distinct hues.
+  [x] Per-point traces + escaped HTML hover (figure.py:36-77). Use Scattergl
       (WebGL) + optional decimation/sampling.
+      Done: 2D now renders with Scattergl; max_points decimates (deterministic,
+      always keeps highlighted points, warns on drop).
 
 PR-V5  Static PNG export  (figure.py)
   [ ] Add matplotlib/PNG export for docs/CI; today plotly-only.

@@ -1,11 +1,61 @@
 from __future__ import annotations
 
 import html
+import warnings
 from typing import Any
 
 import numpy as np
 
 from topic_boundaries.documents import Datapoint
+
+# Plotly's default qualitative palette; readable for the common small-k case.
+_PALETTE = [
+    "#636EFA",
+    "#EF553B",
+    "#00CC96",
+    "#AB63FA",
+    "#FFA15A",
+    "#19D3F3",
+    "#FF6692",
+    "#B6E880",
+    "#FF97FF",
+    "#FECB52",
+]
+
+
+def _cluster_colors(n_clusters: int) -> list[str]:
+    """One distinct color per cluster, scaling past the 10-color palette."""
+    if n_clusters <= len(_PALETTE):
+        return _PALETTE[:n_clusters]
+    # Sample a perceptually-varied continuous scale so any k gets distinct hues.
+    from plotly.colors import sample_colorscale
+
+    return sample_colorscale("Turbo", [i / (n_clusters - 1) for i in range(n_clusters)])
+
+
+def _render_indices(
+    n_docs: int, highlight: set[int], max_points: int | None
+) -> set[int] | None:
+    """Doc indices to draw: all, or a sample capped at max_points (highlights kept).
+
+    Returns None to mean "render everything".
+    """
+    if max_points is None or n_docs <= max_points:
+        return None
+    keep = {i for i in highlight if 0 <= i < n_docs}
+    others = np.array([i for i in range(n_docs) if i not in keep])
+    budget = max(0, max_points - len(keep))
+    if budget < len(others):
+        rng = np.random.default_rng(0)  # deterministic decimation
+        keep.update(int(i) for i in rng.choice(others, size=budget, replace=False))
+    else:
+        keep.update(int(i) for i in others)
+    warnings.warn(
+        f"Decimated {n_docs} points to {len(keep)} for rendering "
+        f"(max_points={max_points}); highlighted points are always kept.",
+        stacklevel=2,
+    )
+    return keep
 
 
 def build_plotly_figure(
@@ -16,13 +66,15 @@ def build_plotly_figure(
     xy_centroids: np.ndarray,
     *,
     title: str,
+    max_points: int | None = None,
 ) -> Any:
     import plotly.graph_objects as go
 
     # 2D or 3D follows the coordinate width; project_to_2d(..., n_components=3)
-    # produces (n, 3) arrays -> Scatter3d.
+    # produces (n, 3) arrays -> Scatter3d. 2D uses Scattergl (WebGL) so large n
+    # stays interactive; Scatter3d is already WebGL-backed.
     is_3d = xy_docs.shape[1] >= 3
-    Scatter = go.Scatter3d if is_3d else go.Scatter
+    Scatter = go.Scatter3d if is_3d else go.Scattergl
 
     def coords(arr: np.ndarray, subset: Any) -> dict[str, Any]:
         d = {"x": arr[subset, 0], "y": arr[subset, 1]}
@@ -30,28 +82,19 @@ def build_plotly_figure(
             d["z"] = arr[subset, 2]
         return d
 
-    palette = [
-        "#636EFA",
-        "#EF553B",
-        "#00CC96",
-        "#AB63FA",
-        "#FFA15A",
-        "#19D3F3",
-        "#FF6692",
-        "#B6E880",
-        "#FF97FF",
-        "#FECB52",
-    ]
     n_clusters = int(labels.max()) + 1 if labels.size else 0
+    colors = _cluster_colors(n_clusters)
+    render = _render_indices(len(datapoints), highlight, max_points)
     traces: list[Any] = []
 
     for c in range(n_clusters):
         idx = np.where(labels == c)[0]
         if idx.size == 0:
             continue
-        color = palette[c % len(palette)]
-        regular = [i for i in idx.tolist() if i not in highlight]
-        marked = [i for i in idx.tolist() if i in highlight]
+        color = colors[c]
+        members = [i for i in idx.tolist() if render is None or i in render]
+        regular = [i for i in members if i not in highlight]
+        marked = [i for i in members if i in highlight]
         for subset, size, name_suffix in (
             (regular, 6, ""),
             (marked, 11, " (boundary / centroid-nb)"),

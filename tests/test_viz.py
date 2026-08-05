@@ -238,7 +238,8 @@ def test_build_plotly_figure_2d_vs_3d():
     xy2 = np.arange(8, dtype=float).reshape(4, 2)
     c2 = np.array([[0.0, 0.0], [1.0, 1.0]])
     fig2 = build_plotly_figure(dps, labels, highlight, xy2, c2, title="t")
-    assert fig2.data and all(isinstance(tr, go.Scatter) for tr in fig2.data)
+    # 2D uses WebGL (Scattergl), not the SVG Scatter.
+    assert fig2.data and all(isinstance(tr, go.Scattergl) for tr in fig2.data)
     assert not any(isinstance(tr, go.Scatter3d) for tr in fig2.data)
 
     xy3 = np.arange(12, dtype=float).reshape(4, 3)
@@ -246,6 +247,63 @@ def test_build_plotly_figure_2d_vs_3d():
     fig3 = build_plotly_figure(dps, labels, highlight, xy3, c3, title="t")
     assert fig3.data and all(isinstance(tr, go.Scatter3d) for tr in fig3.data)
     assert all(tr.z is not None for tr in fig3.data)  # z coordinate present
+
+
+def test_cluster_colors_scale_past_palette():
+    from topic_boundaries.visualization.figure import _PALETTE, _cluster_colors
+
+    # <= palette size: uses the qualitative palette verbatim
+    assert _cluster_colors(3) == _PALETTE[:3]
+    # > palette size: distinct color per cluster, no recycling
+    n = len(_PALETTE) + 8
+    colors = _cluster_colors(n)
+    assert len(colors) == n
+    assert len(set(colors)) == n
+
+
+def test_build_figure_many_clusters_distinct_colors():
+    pytest.importorskip("plotly.graph_objects")
+    from topic_boundaries.documents import Datapoint
+    from topic_boundaries.visualization import build_plotly_figure
+
+    n = 15  # more than the 10-color palette
+    dps = [Datapoint(doc_id=f"d{i}", body=f"b{i}", meta={}) for i in range(n)]
+    labels = np.arange(n)
+    xy = np.random.default_rng(0).standard_normal((n, 2))
+    cents = np.random.default_rng(1).standard_normal((n, 2))
+    fig = build_plotly_figure(dps, labels, set(), xy, cents, title="t")
+    cluster_colors = [
+        tr.marker.color for tr in fig.data if str(tr.name).startswith("cluster")
+    ]
+    assert len(cluster_colors) == n
+    assert len(set(cluster_colors)) == n  # no recycling past 10
+
+
+def test_build_figure_decimates_but_keeps_highlights():
+    pytest.importorskip("plotly.graph_objects")
+    from topic_boundaries.documents import Datapoint
+    from topic_boundaries.visualization import build_plotly_figure
+
+    n = 200
+    dps = [Datapoint(doc_id=f"d{i}", body=f"b{i}", meta={}) for i in range(n)]
+    labels = np.zeros(n, dtype=int)
+    xy = np.random.default_rng(0).standard_normal((n, 2))
+    cents = np.array([[0.0, 0.0]])
+    highlight = {5, 150, 199}
+
+    with pytest.warns(UserWarning, match="Decimated"):
+        fig = build_plotly_figure(
+            dps, labels, highlight, xy, cents, title="t", max_points=50
+        )
+    # Count rendered doc points (exclude the centroid trace).
+    rendered = {
+        int(t.split("doc_id: d")[1].split("<br>")[0])
+        for tr in fig.data
+        if str(tr.name).startswith("cluster")
+        for t in tr.text
+    }
+    assert len(rendered) <= 50
+    assert highlight <= rendered  # every highlighted point survives decimation
 
 
 def test_results_json_loads_with_viz_helpers():
