@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from topic_boundaries import config as cfg
-from topic_boundaries.config import Settings, _parse_n_init
+from topic_boundaries.config import Settings
 
 
 @pytest.fixture
@@ -55,24 +55,10 @@ def test_env_overrides_config(monkeypatch, tmp_path: Path):
     assert s.embedding_model == "env-model"
 
 
-@pytest.mark.parametrize(
-    "value,expected",
-    [
-        (None, "auto"),
-        ("", "auto"),
-        ("  ", "auto"),
-        (25, 25),
-        ("30", 30),
-        ("auto", "auto"),
-    ],
-)
-def test_parse_n_init(value, expected):
-    assert _parse_n_init(value) == expected
-
-
-def test_parse_n_init_rejects_bad_type():
-    with pytest.raises(ValueError):
-        _parse_n_init(3.5)
+def test_n_init_absent_defaults_to_auto(_no_config_env, tmp_path: Path):
+    cfg_path = tmp_path / "config.yml"
+    cfg_path.write_text("kmeans:\n  random_state: 7\n", encoding="utf-8")
+    assert Settings.from_config(config_path=cfg_path).kmeans_n_init == "auto"
 
 
 def test_from_config_rejects_non_mapping_top_level(tmp_path: Path):
