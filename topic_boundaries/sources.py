@@ -127,6 +127,49 @@ class ArxivSource:
         return [datapoint_from_record(r) for r in harvest(self.query, self.max_results)]
 
 
+class ArxivPaperSource:
+    """A single arXiv paper by id or URL (not a search query).
+
+    Default: one Datapoint from the abstract + metadata. With ``fetch_pdf``,
+    downloads the PDF and chunks it via ``pdf_to_datapoints`` instead.
+    """
+
+    def __init__(
+        self,
+        id_or_url: str,
+        *,
+        fetch_pdf: bool = False,
+        max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
+        overlap: int = DEFAULT_CHUNK_OVERLAP,
+    ):
+        self.id_or_url = id_or_url
+        self.fetch_pdf = fetch_pdf
+        self.max_chars = max_chars
+        self.overlap = overlap
+
+    def load(self) -> list[Datapoint]:
+        import tempfile
+
+        from topic_boundaries.collect_datasets import (
+            download_pdf,
+            fetch_paper,
+            normalize_arxiv_id,
+        )
+
+        arxiv_id = normalize_arxiv_id(self.id_or_url)
+        if not self.fetch_pdf:
+            return [datapoint_from_record(fetch_paper(self.id_or_url))]
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / f"{arxiv_id.replace('/', '_')}.pdf"
+            pdf = download_pdf(self.id_or_url, dest)
+            return pdf_to_datapoints(
+                pdf,
+                max_chars=self.max_chars,
+                overlap=self.overlap,
+                doc_id_prefix=arxiv_id,
+            )
+
+
 class CsvSource:
     """CSV rows mapped to Datapoints (stdlib csv; no pandas)."""
 
