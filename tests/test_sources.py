@@ -1,11 +1,23 @@
+import shutil
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from topic_boundaries.sources import (
     CsvSource,
+    PdfSource,
     TextDirSource,
     _parse_vector,
 )
+
+
+def _real_pdf() -> Path:
+    pytest.importorskip("pypdf")
+    pdf = Path(__file__).resolve().parents[1] / "knowledge_boundaries_paper_proposal.pdf"
+    if not pdf.is_file():
+        pytest.skip(f"missing {pdf}")
+    return pdf
 
 
 @pytest.mark.parametrize(
@@ -56,3 +68,43 @@ def test_textdir_source_chunks_files(tmp_path):
     assert all("#chunk" in d.doc_id for d in dps)
     assert all(d.meta["source_file"].endswith(".txt") for d in dps)
     assert any(d.doc_id.startswith("a.txt") for d in dps)
+
+
+def test_pdf_source_single_file_unchanged(tmp_path):
+    src = _real_pdf()
+    dps = PdfSource(src, max_chars=500).load()
+    assert len(dps) >= 5
+    assert dps[0].doc_id == f"{src.stem}#chunk0"
+    assert dps[0].meta["source_pdf"].endswith(src.name)
+
+
+def test_pdf_source_directory_globs_and_disambiguates(tmp_path):
+    src = _real_pdf()
+    shutil.copy(src, tmp_path / "one.pdf")
+    sub = tmp_path / "nested"
+    sub.mkdir()
+    shutil.copy(src, sub / "one.pdf")  # same name, different dir
+
+    dps = PdfSource(tmp_path, max_chars=500).load()
+    prefixes = {d.doc_id.split("#")[0] for d in dps}
+    # relative-path prefixes keep the two same-named files apart
+    assert prefixes == {"one", "nested/one"}
+    # each chunk carries its own source_pdf pointing at the file it came from
+    assert {Path(d.meta["source_pdf"]).parent.name for d in dps} == {
+        tmp_path.name,
+        "nested",
+    }
+
+
+def test_pdf_source_explicit_list_concatenates(tmp_path):
+    src = _real_pdf()
+    a = tmp_path / "a.pdf"
+    b = tmp_path / "b.pdf"
+    shutil.copy(src, a)
+    shutil.copy(src, b)
+
+    dps = PdfSource([a, b], max_chars=500).load()
+    prefixes = {d.doc_id.split("#")[0] for d in dps}
+    assert prefixes == {"a", "b"}
+    only_a = PdfSource(a, max_chars=500).load()
+    assert len(dps) == 2 * len(only_a)

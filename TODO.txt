@@ -28,7 +28,7 @@ PR-C2  Drop plotly pass-through wrapper  (figure.py, ~-17 lines)
       _try_plotly -> build_plotly_figure, delete wrapper. (figure.py:111-127)
 
 PR-C3  Simplify config n_init parsing  (config.py, ~-12 lines)
-  [ ] _parse_n_init coerces int/str/None, but yaml already types values and
+  [x] _parse_n_init coerces int/str/None, but yaml already types values and
       n_init isn't read from env. Replace with km.get("n_init") or "auto".
       (config.py:10-22,64)
 
@@ -36,10 +36,15 @@ PR-C4  Match boundary highlights by doc_id  (core.py, ~-15 lines)
   [ ] boundary_highlight_indices hand-rolls two title+body fingerprint helpers;
       the centroid_neighbors branch above already matches by doc_id and boundary
       hits carry doc_id too. Match by doc_id everywhere, delete helpers.
-      VERIFY boundary_by_cluster items include doc_id first. (core.py:12-20,38-46)
+      VERIFY boundary_by_cluster items include doc_id first.
+  BLOCKED: verify fails. Stored result fixtures (results/*.json) carry only
+  title+abstract, no doc_id, and the writer that produced them was the removed
+  CLI — nothing emits boundary_by_cluster now. Switching to doc_id would make
+  those fixtures highlight nothing. Do this together with a new JSON writer that
+  serializes hit.doc_id (hits already carry it), then regenerate the fixtures. (core.py:12-20,38-46)
 
 PR-C5  Fix arxive_link typo  (LOW priority; touches stored datasets + 4 tests)
-  [ ] arxive_link (typo) handled as fallback in 2 places because
+  [x] arxive_link (typo) handled as fallback in 2 places because
       collect_datasets writes the misspelled key. Fix key to arxiv_link at the
       writer, drop fallbacks. (documents.py:57,68; collect_datasets.py:59)
 
@@ -69,7 +74,7 @@ Already built: JsonlSource, PdfSource(single), ArxivSource(search),
 TextDirSource(*.txt), CsvSource.
 
 PR-L1  PDF list / directory  (sources.py)
-  [ ] PdfSource takes ONE path. Accept a directory (glob **/*.pdf) and/or an
+  [x] PdfSource takes ONE path. Accept a directory (glob **/*.pdf) and/or an
       explicit list -> concatenate datapoints. Model on TextDirSource: loop
       pdf_to_datapoints and merge, keep per-file source_pdf meta. + tests.
 
