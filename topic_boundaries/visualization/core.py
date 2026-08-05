@@ -61,10 +61,34 @@ def project_to_2d(
     Returns (xy_docs, xy_centroids), each shape (n, n_components).
     ``n_components`` must be 2 or 3 (build_plotly_figure picks Scatter vs
     Scatter3d from the coordinate width).
+
+    Methods: "pca", "tsne", "umap" (needs umap-learn), or "precomputed" —
+    pass coords that are already reduced (vectors/centroids used as-is).
     """
     if n_components not in (2, 3):
         raise ValueError(f"n_components must be 2 or 3, got {n_components}")
     m = method.lower().strip()
+    if m == "precomputed":
+        for name, arr in (("vectors", vectors), ("centroids", centroids)):
+            if arr.shape[1] != n_components:
+                raise ValueError(
+                    f"precomputed {name} has width {arr.shape[1]}, "
+                    f"expected n_components={n_components}"
+                )
+        return vectors.astype(np.float64), centroids.astype(np.float64)
+    if m == "umap":
+        try:
+            from umap import UMAP
+        except ImportError as e:
+            raise ImportError(
+                "UMAP projection requires umap-learn. Install with: "
+                'pip install umap-learn (or pip install -e ".[viz]")'
+            ) from e
+        reducer = UMAP(n_components=n_components, random_state=random_state)
+        xy_docs = reducer.fit_transform(vectors)
+        # UMAP (unlike t-SNE) has transform(), so centroids project properly.
+        xy_centroids = reducer.transform(centroids)
+        return xy_docs.astype(np.float64), xy_centroids.astype(np.float64)
     if m == "pca":
         pca = PCA(n_components=n_components, random_state=random_state)
         xy_docs = pca.fit_transform(vectors)
@@ -91,4 +115,6 @@ def project_to_2d(
             else:
                 xy_centroids[c] = np.nan
         return xy_docs.astype(np.float64), xy_centroids
-    raise ValueError(f"Unknown projection: {method!r} (use pca or tsne)")
+    raise ValueError(
+        f"Unknown projection: {method!r} (use pca, tsne, umap, or precomputed)"
+    )

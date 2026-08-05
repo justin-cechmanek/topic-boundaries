@@ -109,6 +109,64 @@ def test_project_rejects_bad_n_components():
         )
 
 
+def test_project_precomputed_passthrough():
+    coords = np.array([[0.0, 1.0], [2.0, 3.0], [4.0, 5.0]], dtype=np.float32)
+    cents = np.array([[0.0, 0.0], [1.0, 1.0]], dtype=np.float32)
+    xy_d, xy_c = project_to_2d(
+        coords,
+        np.array([0, 0, 1]),
+        cents,
+        method="precomputed",
+        random_state=0,
+        tsne_perplexity=5.0,
+    )
+    np.testing.assert_array_equal(xy_d, coords.astype(np.float64))
+    np.testing.assert_array_equal(xy_c, cents.astype(np.float64))
+
+
+def test_project_precomputed_width_mismatch_raises():
+    with pytest.raises(ValueError):
+        project_to_2d(
+            np.zeros((3, 5), dtype=np.float32),  # width 5 != n_components 2
+            np.array([0, 0, 1]),
+            np.zeros((2, 5), dtype=np.float32),
+            method="precomputed",
+            random_state=0,
+            tsne_perplexity=5.0,
+        )
+
+
+def test_project_unknown_method_raises():
+    with pytest.raises(ValueError):
+        project_to_2d(
+            np.zeros((3, 4), dtype=np.float32),
+            np.array([0, 0, 1]),
+            np.zeros((1, 4), dtype=np.float32),
+            method="isomap",
+            random_state=0,
+            tsne_perplexity=5.0,
+        )
+
+
+def test_project_umap_shapes():
+    pytest.importorskip("umap")
+    rng = np.random.default_rng(0)
+    vectors = rng.standard_normal((30, 8)).astype(np.float32)
+    centroids = rng.standard_normal((3, 8)).astype(np.float32)
+    labels = np.array([0] * 10 + [1] * 10 + [2] * 10)
+    xy_d, xy_c = project_to_2d(
+        vectors,
+        labels,
+        centroids,
+        method="umap",
+        random_state=0,
+        tsne_perplexity=10.0,
+        n_components=2,
+    )
+    assert xy_d.shape == (30, 2)
+    assert xy_c.shape == (3, 2)  # UMAP.transform projects centroids too
+
+
 def test_build_plotly_figure_2d_vs_3d():
     go = pytest.importorskip("plotly.graph_objects")
     from topic_boundaries.documents import Datapoint
