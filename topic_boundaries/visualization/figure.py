@@ -8,7 +8,7 @@ import numpy as np
 from topic_boundaries.documents import Datapoint
 
 
-def _try_plotly(
+def build_plotly_figure(
     datapoints: list[Datapoint],
     labels: np.ndarray,
     highlight: set[int],
@@ -106,22 +106,3 @@ def _try_plotly(
     fig.update_xaxes(title="dim 1")
     fig.update_yaxes(title="dim 2", scaleanchor="x", scaleratio=1)
     return fig
-
-
-def build_plotly_figure(
-    datapoints: list[Datapoint],
-    labels: np.ndarray,
-    highlight: set[int],
-    xy_docs: np.ndarray,
-    xy_centroids: np.ndarray,
-    *,
-    title: str,
-) -> Any:
-    return _try_plotly(
-        datapoints,
-        labels,
-        highlight,
-        xy_docs,
-        xy_centroids,
-        title=title,
-    )

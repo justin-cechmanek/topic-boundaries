@@ -24,7 +24,7 @@ PR-C1  Prune speculative source infra  (sources.py, ~-48 lines)
   note: update test_public_api.py and test_sources.py.
 
 PR-C2  Drop plotly pass-through wrapper  (figure.py, ~-17 lines)
-  [ ] build_plotly_figure only forwards to _try_plotly unchanged. Rename
+  [x] build_plotly_figure only forwards to _try_plotly unchanged. Rename
       _try_plotly -> build_plotly_figure, delete wrapper. (figure.py:111-127)
 
 PR-C3  Simplify config n_init parsing  (config.py, ~-12 lines)
