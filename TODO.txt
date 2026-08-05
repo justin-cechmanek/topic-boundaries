@@ -139,7 +139,10 @@ PR-V4  Scale rendering to large n / many clusters  (figure.py)
       always keeps highlighted points, warns on drop).
 
 PR-V5  Static PNG export  (figure.py)
-  [ ] Add matplotlib/PNG export for docs/CI; today plotly-only.
+  [x] Add matplotlib/PNG export for docs/CI; today plotly-only.
+      Done: export_png (matplotlib Agg, self-contained; 2D/3D; same color +
+      highlight + centroid encoding as build_plotly_figure). Added matplotlib
+      to the [viz] extra.
 
 
 ================================================================

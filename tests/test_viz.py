@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import numpy as np
@@ -249,11 +248,18 @@ def test_build_plotly_figure_2d_vs_3d():
     assert all(tr.z is not None for tr in fig3.data)  # z coordinate present
 
 
-def test_cluster_colors_scale_past_palette():
+def test_cluster_colors_palette_for_small_k():
+    # <= palette size uses the qualitative palette verbatim (no plotly needed).
     from topic_boundaries.visualization.figure import _PALETTE, _cluster_colors
 
-    # <= palette size: uses the qualitative palette verbatim
     assert _cluster_colors(3) == _PALETTE[:3]
+    assert _cluster_colors(len(_PALETTE)) == _PALETTE
+
+
+def test_cluster_colors_scale_past_palette():
+    pytest.importorskip("plotly")  # >10 branch samples a plotly colorscale
+    from topic_boundaries.visualization.figure import _PALETTE, _cluster_colors
+
     # > palette size: distinct color per cluster, no recycling
     n = len(_PALETTE) + 8
     colors = _cluster_colors(n)
@@ -306,18 +312,50 @@ def test_build_figure_decimates_but_keeps_highlights():
     assert highlight <= rendered  # every highlighted point survives decimation
 
 
+def test_export_png_writes_real_image(tmp_path):
+    pytest.importorskip("matplotlib")
+    from topic_boundaries.visualization import export_png
+
+    n = 12
+    labels = np.array([i % 3 for i in range(n)])
+    xy = np.random.default_rng(0).standard_normal((n, 2))
+    cents = np.random.default_rng(1).standard_normal((3, 2))
+    out = export_png(labels, {1, 4}, xy, cents, tmp_path / "plot.png", title="t")
+    assert out.is_file()
+    # real PNG: 8-byte magic header, non-trivial size
+    assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    assert out.stat().st_size > 1000
+
+
+def test_export_png_3d(tmp_path):
+    pytest.importorskip("matplotlib")
+    from topic_boundaries.visualization import export_png
+
+    n = 9
+    labels = np.array([i % 3 for i in range(n)])
+    xy = np.random.default_rng(0).standard_normal((n, 3))
+    cents = np.random.default_rng(1).standard_normal((3, 3))
+    out = export_png(labels, set(), xy, cents, tmp_path / "plot3d.png")
+    assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
 def test_results_json_loads_with_viz_helpers():
+    # results/ is gitignored (generated artifacts), so build a realistic
+    # boundary_by_cluster payload from the committed dataset's real records and
+    # confirm the viz helper matches them back by title+abstract fingerprint.
     root = Path(__file__).resolve().parents[1]
-    path = root / "results" / "ml_ai_100_max_distance_sort_n10_top5.json"
-    if not path.is_file():
-        pytest.skip(f"missing results fixture: {path}")
-    with path.open(encoding="utf-8") as f:
-        data = json.load(f)
-    sample = root / "datasets" / "arxiv" / "ml_ai_100.jsonl"
-    if not sample.is_file():
-        pytest.skip(f"missing dataset fixture: {sample}")
     from topic_boundaries.documents import load_jsonl
 
-    dps = load_jsonl(sample)
+    dps = load_jsonl(root / "datasets" / "arxiv" / "ml_ai_100.jsonl")
+    picked = dps[:2]
+    data = {
+        "method": "cross_boundary",
+        "boundary_by_cluster": [
+            [
+                {"title": str(dp.meta.get("title") or ""), "abstract": dp.body}
+                for dp in picked
+            ]
+        ],
+    }
     hi = boundary_highlight_indices(data, dps)
-    assert len(hi) > 0
+    assert hi == {0, 1}
