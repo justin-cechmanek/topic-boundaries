@@ -19,13 +19,10 @@ from topic_boundaries.pipeline import (
 from topic_boundaries.sources import (
     ArxivSource,
     CsvSource,
-    DataFrameSource,
     DataSource,
     JsonlSource,
     PdfSource,
     TextDirSource,
-    register_source,
-    SOURCES,
 )
 
 # Boundary methods (the two array-based rankers share a function name upstream,
@@ -61,10 +58,7 @@ __all__ = [
     "PdfSource",
     "ArxivSource",
     "CsvSource",
-    "DataFrameSource",
     "TextDirSource",
-    "register_source",
-    "SOURCES",
     "nearest_to_centroid",
     "boundary_doc_indices_per_cluster",
     "cross_boundary_hits_for_all_clusters",

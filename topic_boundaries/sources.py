@@ -1,8 +1,7 @@
 """Data sources: anything that produces a list[Datapoint].
 
-Built-ins cover the common cases (JSONL, PDF, arXiv, CSV, DataFrame, a directory
-of text files). Implement the DataSource protocol for anything exotic, or call
-``register_source`` to expose it to the CLI.
+Built-ins cover the common cases (JSONL, PDF, arXiv, CSV, a directory of text
+files). Implement the DataSource protocol for anything exotic.
 """
 
 from __future__ import annotations
@@ -10,7 +9,7 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Any, Callable, Iterable, Protocol, runtime_checkable
+from typing import Any, Iterable, Protocol, runtime_checkable
 
 from topic_boundaries.config import DEFAULT_CHUNK_MAX_CHARS, DEFAULT_CHUNK_OVERLAP
 from topic_boundaries.documents import Datapoint, datapoint_from_record
@@ -129,41 +128,6 @@ class CsvSource:
         ]
 
 
-class DataFrameSource:
-    """A pandas (or duck-typed) DataFrame mapped to Datapoints; no pandas dep here."""
-
-    def __init__(
-        self,
-        df: Any,
-        *,
-        id_col: str,
-        body_col: str | None = None,
-        meta_cols: Iterable[str] | None = None,
-        vector_col: str | None = None,
-    ):
-        self.df = df
-        self.id_col = id_col
-        self.body_col = body_col
-        self.meta_cols = list(meta_cols) if meta_cols else None
-        self.vector_col = vector_col
-
-    def load(self) -> list[Datapoint]:
-        out: list[Datapoint] = []
-        for _, row in self.df.iterrows():
-            out.append(
-                datapoint_from_record(
-                    _record_from_row(
-                        row,
-                        id_col=self.id_col,
-                        body_col=self.body_col,
-                        meta_cols=self.meta_cols,
-                        vector_col=self.vector_col,
-                    )
-                )
-            )
-        return out
-
-
 class TextDirSource:
     """A directory of text files; each file is chunked like the PDF loader."""
 
@@ -198,20 +162,3 @@ class TextDirSource:
                     )
                 )
         return out
-
-
-# Programmatic registry of built-in sources, for discovery and plug-ins:
-# `SOURCES[name](...)` / `register_source("myfmt", MySource)`. The CLI uses its
-# own typed flags (--csv, --text-dir, ...) rather than this map.
-SOURCES: dict[str, Callable[..., DataSource]] = {
-    "jsonl": JsonlSource,
-    "pdf": PdfSource,
-    "arxiv": ArxivSource,
-    "csv": CsvSource,
-    "textdir": TextDirSource,
-}
-
-
-def register_source(name: str, factory: Callable[..., DataSource]) -> None:
-    """Register a DataSource factory under `name` (programmatic/plug-in use)."""
-    SOURCES[name] = factory

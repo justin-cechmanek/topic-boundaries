@@ -3,7 +3,6 @@ import pytest
 
 from topic_boundaries.sources import (
     CsvSource,
-    DataFrameSource,
     TextDirSource,
     _parse_vector,
 )
@@ -47,21 +46,6 @@ def test_csv_source_with_precomputed_vectors(tmp_path):
     assert dps[0].body == ""  # vector-only
     np.testing.assert_array_equal(dps[0].vector, np.array([1.0, 0.0], dtype=np.float32))
     np.testing.assert_array_equal(dps[1].vector, np.array([0.0, 1.0], dtype=np.float32))
-
-
-def test_dataframe_source_duck_typed():
-    # Minimal duck-typed stand-in for a DataFrame: .iterrows() yields (idx, row).
-    class FakeDF:
-        def __init__(self, rows):
-            self._rows = rows
-
-        def iterrows(self):
-            return enumerate(self._rows)
-
-    df = FakeDF([{"id": "x", "text": "foo"}, {"id": "y", "text": "bar"}])
-    dps = DataFrameSource(df, id_col="id", body_col="text").load()
-    assert [d.doc_id for d in dps] == ["x", "y"]
-    assert dps[1].body == "bar"
 
 
 def test_textdir_source_chunks_files(tmp_path):
