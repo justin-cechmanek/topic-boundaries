@@ -170,6 +170,44 @@ class ArxivPaperSource:
             )
 
 
+class RecordsSource:
+    """Any iterable of dicts mapped to Datapoints.
+
+    The id/body/meta/vector column mapping is the same one CsvSource uses; this
+    just drops the CSV parsing so in-memory dicts or a parsed JSON array work
+    too. Values may be native (lists, numbers) — not only strings.
+    """
+
+    def __init__(
+        self,
+        records: Iterable[dict[str, Any]],
+        *,
+        id_col: str,
+        body_col: str | None = None,
+        meta_cols: Iterable[str] | None = None,
+        vector_col: str | None = None,
+    ):
+        self.records = records
+        self.id_col = id_col
+        self.body_col = body_col
+        self.meta_cols = list(meta_cols) if meta_cols else None
+        self.vector_col = vector_col
+
+    def load(self) -> list[Datapoint]:
+        return [
+            datapoint_from_record(
+                _record_from_row(
+                    row,
+                    id_col=self.id_col,
+                    body_col=self.body_col,
+                    meta_cols=self.meta_cols,
+                    vector_col=self.vector_col,
+                )
+            )
+            for row in self.records
+        ]
+
+
 class CsvSource:
     """CSV rows mapped to Datapoints (stdlib csv; no pandas)."""
 
@@ -191,18 +229,47 @@ class CsvSource:
     def load(self) -> list[Datapoint]:
         with self.path.open(encoding="utf-8", newline="") as f:
             rows = list(csv.DictReader(f))
-        return [
-            datapoint_from_record(
-                _record_from_row(
-                    row,
-                    id_col=self.id_col,
-                    body_col=self.body_col,
-                    meta_cols=self.meta_cols,
-                    vector_col=self.vector_col,
-                )
-            )
-            for row in rows
-        ]
+        return RecordsSource(
+            rows,
+            id_col=self.id_col,
+            body_col=self.body_col,
+            meta_cols=self.meta_cols,
+            vector_col=self.vector_col,
+        ).load()
+
+
+class JsonSource:
+    """A JSON file holding an array of objects, mapped like CsvSource.
+
+    (For line-delimited JSON with the arXiv/generic schema, use JsonlSource.)
+    """
+
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        id_col: str,
+        body_col: str | None = None,
+        meta_cols: Iterable[str] | None = None,
+        vector_col: str | None = None,
+    ):
+        self.path = Path(path)
+        self.id_col = id_col
+        self.body_col = body_col
+        self.meta_cols = list(meta_cols) if meta_cols else None
+        self.vector_col = vector_col
+
+    def load(self) -> list[Datapoint]:
+        data = json.loads(self.path.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            raise ValueError(f"{self.path} must contain a JSON array of objects.")
+        return RecordsSource(
+            data,
+            id_col=self.id_col,
+            body_col=self.body_col,
+            meta_cols=self.meta_cols,
+            vector_col=self.vector_col,
+        ).load()
 
 
 # Strip Markdown syntax that adds embedding noise: ATX heading markers (keep the

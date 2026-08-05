@@ -94,9 +94,12 @@ PR-L3  arXiv by ID + PDF fetch  (sources.py, collect_datasets.py)
       Done: download_pdf + ArxivPaperSource(..., fetch_pdf=True).
 
 PR-L4  Generic loader + docs  (sources.py, README)
-  [ ] Extend the csv/df id/body/meta/vector mapping to a generic JSON or
+  [x] Extend the csv/df id/body/meta/vector mapping to a generic JSON or
       dict-iterable source.
-  [ ] Document the DataSource protocol in README.
+      Done: RecordsSource (any dict iterable) + JsonSource (JSON array file);
+      CsvSource now delegates to RecordsSource.
+  [x] Document the DataSource protocol in README.
+      Done: "Data sources" section (protocol + built-ins table + mapping).
 
 
 ================================================================
