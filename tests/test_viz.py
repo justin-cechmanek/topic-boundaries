@@ -76,6 +76,64 @@ def test_project_pca_shapes():
     assert xy_c.shape == (3, 2)
 
 
+def test_project_3d_shapes():
+    rng = np.random.default_rng(0)
+    vectors = rng.standard_normal((20, 8)).astype(np.float32)
+    centroids = rng.standard_normal((3, 8)).astype(np.float32)
+    labels = np.array([0] * 7 + [1] * 7 + [2] * 6)
+    for method in ("pca", "tsne"):
+        xy_d, xy_c = project_to_2d(
+            vectors,
+            labels,
+            centroids,
+            method=method,
+            random_state=0,
+            tsne_perplexity=10.0,
+            n_components=3,
+        )
+        assert xy_d.shape == (20, 3)
+        assert xy_c.shape == (3, 3)
+
+
+def test_project_rejects_bad_n_components():
+    v = np.zeros((4, 3), dtype=np.float32)
+    with pytest.raises(ValueError):
+        project_to_2d(
+            v,
+            np.zeros(4, dtype=int),
+            np.zeros((1, 3), dtype=np.float32),
+            method="pca",
+            random_state=0,
+            tsne_perplexity=5.0,
+            n_components=4,
+        )
+
+
+def test_build_plotly_figure_2d_vs_3d():
+    go = pytest.importorskip("plotly.graph_objects")
+    from topic_boundaries.documents import Datapoint
+    from topic_boundaries.visualization import build_plotly_figure
+
+    dps = [
+        Datapoint(doc_id=f"d{i}", body=f"body {i}", meta={"title": f"T{i}"})
+        for i in range(4)
+    ]
+    labels = np.array([0, 0, 1, 1])
+    highlight = {1}
+
+    xy2 = np.arange(8, dtype=float).reshape(4, 2)
+    c2 = np.array([[0.0, 0.0], [1.0, 1.0]])
+    fig2 = build_plotly_figure(dps, labels, highlight, xy2, c2, title="t")
+    assert fig2.data and all(isinstance(tr, go.Scatter) for tr in fig2.data)
+    assert not any(isinstance(tr, go.Scatter3d) for tr in fig2.data)
+
+    xy3 = np.arange(12, dtype=float).reshape(4, 3)
+    c3 = np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]])
+    fig3 = build_plotly_figure(dps, labels, highlight, xy3, c3, title="t")
+    assert fig3.data and all(isinstance(tr, go.Scatter3d) for tr in fig3.data)
+    assert all(tr.z is not None for tr in fig3.data)  # z coordinate present
+
+
 def test_results_json_loads_with_viz_helpers():
     root = Path(__file__).resolve().parents[1]
     path = root / "results" / "ml_ai_100_max_distance_sort_n10_top5.json"

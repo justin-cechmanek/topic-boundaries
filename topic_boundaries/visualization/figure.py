@@ -19,6 +19,17 @@ def build_plotly_figure(
 ) -> Any:
     import plotly.graph_objects as go
 
+    # 2D or 3D follows the coordinate width; project_to_2d(..., n_components=3)
+    # produces (n, 3) arrays -> Scatter3d.
+    is_3d = xy_docs.shape[1] >= 3
+    Scatter = go.Scatter3d if is_3d else go.Scatter
+
+    def coords(arr: np.ndarray, subset: Any) -> dict[str, Any]:
+        d = {"x": arr[subset, 0], "y": arr[subset, 1]}
+        if is_3d:
+            d["z"] = arr[subset, 2]
+        return d
+
     palette = [
         "#636EFA",
         "#EF553B",
@@ -47,8 +58,6 @@ def build_plotly_figure(
         ):
             if not subset:
                 continue
-            xs = xy_docs[subset, 0]
-            ys = xy_docs[subset, 1]
             texts = []
             for i in subset:
                 dp = datapoints[i]
@@ -61,9 +70,8 @@ def build_plotly_figure(
                     f"cluster: {c}<br>{body_esc}"
                 )
             traces.append(
-                go.Scatter(
-                    x=xs,
-                    y=ys,
+                Scatter(
+                    **coords(xy_docs, subset),
                     mode="markers",
                     name=f"cluster {c}{name_suffix}",
                     marker=dict(
@@ -79,11 +87,10 @@ def build_plotly_figure(
     valid_c = ~np.isnan(xy_centroids).any(axis=1)
     if valid_c.any():
         traces.append(
-            go.Scatter(
-                x=xy_centroids[valid_c, 0],
-                y=xy_centroids[valid_c, 1],
+            Scatter(
+                **coords(xy_centroids, valid_c),
                 mode="markers",
-                name="centroids (2D)",
+                name=f"centroids ({xy_centroids.shape[1]}D)",
                 marker=dict(
                     size=16,
                     symbol="x",
@@ -103,6 +110,11 @@ def build_plotly_figure(
         legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
         margin=dict(l=40, r=160, t=50, b=40),
     )
-    fig.update_xaxes(title="dim 1")
-    fig.update_yaxes(title="dim 2", scaleanchor="x", scaleratio=1)
+    if is_3d:
+        fig.update_layout(
+            scene=dict(xaxis_title="dim 1", yaxis_title="dim 2", zaxis_title="dim 3")
+        )
+    else:
+        fig.update_xaxes(title="dim 1")
+        fig.update_yaxes(title="dim 2", scaleanchor="x", scaleratio=1)
     return fig
