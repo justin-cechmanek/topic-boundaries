@@ -67,19 +67,52 @@ class JsonlSource:
 
 
 class PdfSource:
+    """One PDF, a directory of PDFs (glob), or an explicit list of PDFs.
+
+    Datapoints from every file are concatenated; each keeps its own
+    ``source_pdf`` meta (set by ``pdf_to_datapoints``). For a directory the
+    doc_id prefix is the file's path relative to the directory so same-named
+    PDFs in different subdirs don't collide; a single file / list uses the stem.
+    """
+
     def __init__(
         self,
-        path: str | Path,
+        path: str | Path | Iterable[str | Path],
         *,
+        glob: str = "**/*.pdf",
         max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
         overlap: int = DEFAULT_CHUNK_OVERLAP,
     ):
-        self.path = Path(path)
+        self.path = path
+        self.glob = glob
         self.max_chars = max_chars
         self.overlap = overlap
 
+    def _files(self) -> list[tuple[Path, str]]:
+        """(file, doc_id_prefix) pairs to load, in stable order."""
+        if isinstance(self.path, (list, tuple)):  # explicit list of paths
+            return [(Path(p), Path(p).stem) for p in self.path]
+        p = Path(self.path)
+        if p.is_dir():
+            return [
+                (f, str(f.relative_to(p).with_suffix("")))
+                for f in sorted(p.glob(self.glob))
+                if f.is_file()
+            ]
+        return [(p, p.stem)]
+
     def load(self) -> list[Datapoint]:
-        return pdf_to_datapoints(self.path, max_chars=self.max_chars, overlap=self.overlap)
+        out: list[Datapoint] = []
+        for file, prefix in self._files():
+            out.extend(
+                pdf_to_datapoints(
+                    file,
+                    max_chars=self.max_chars,
+                    overlap=self.overlap,
+                    doc_id_prefix=prefix,
+                )
+            )
+        return out
 
 
 class ArxivSource:
