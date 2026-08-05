@@ -120,10 +120,14 @@ PR-V2  Pluggable reducers  (core.py)  needs: V1 recommended
       umap-learn added to the [viz] extra.
 
 PR-V3  Fix t-SNE handling  (core.py)
-  [ ] Centroids faked as 2D means of members (core.py:77-85); empty clusters
+  [x] Centroids faked as 2D means of members (core.py:77-85); empty clusters
       -> NaN dropped at figure.py:79. Project centroids properly or document.
-  [ ] Runs on full-D with no point cap (core.py:76). Pre-PCA-to-50D speedup +
+      Done: docs+centroids embedded jointly (t-SNE has no transform()), so
+      centroids are real projected points and empty clusters no longer NaN.
+  [x] Runs on full-D with no point cap (core.py:76). Pre-PCA-to-50D speedup +
       guard/warning for large n (t-SNE is O(n^2)).
+      Done: pre-PCA to TSNE_PRE_PCA_DIM=50 when input is wider; UserWarning
+      past TSNE_MAX_RECOMMENDED=10k points.
 
 PR-V4  Scale rendering to large n / many clusters  (figure.py)
   [ ] Palette recycles past 10 clusters (figure.py:41). Use a scalable colormap.

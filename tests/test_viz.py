@@ -109,6 +109,62 @@ def test_project_rejects_bad_n_components():
         )
 
 
+def test_tsne_projects_centroids_no_nan_even_empty_cluster():
+    rng = np.random.default_rng(0)
+    vectors = rng.standard_normal((20, 8)).astype(np.float32)
+    centroids = rng.standard_normal((3, 8)).astype(np.float32)
+    labels = np.array([0] * 10 + [1] * 10)  # cluster 2 has no members
+    xy_d, xy_c = project_to_2d(
+        vectors,
+        labels,
+        centroids,
+        method="tsne",
+        random_state=0,
+        tsne_perplexity=10.0,
+    )
+    assert xy_d.shape == (20, 2)
+    assert xy_c.shape == (3, 2)
+    # jointly embedded -> the empty cluster's centroid is still a real point
+    assert np.isfinite(xy_c).all()
+
+
+def test_tsne_high_dim_pre_pca_runs():
+    rng = np.random.default_rng(0)
+    vectors = rng.standard_normal((30, 120)).astype(np.float32)  # 120 > pre-PCA 50
+    centroids = rng.standard_normal((3, 120)).astype(np.float32)
+    labels = np.array([0] * 10 + [1] * 10 + [2] * 10)
+    xy_d, xy_c = project_to_2d(
+        vectors,
+        labels,
+        centroids,
+        method="tsne",
+        random_state=0,
+        tsne_perplexity=10.0,
+    )
+    assert xy_d.shape == (30, 2) and xy_c.shape == (3, 2)
+    assert np.isfinite(xy_d).all() and np.isfinite(xy_c).all()
+
+
+def test_tsne_warns_on_large_n(monkeypatch):
+    from topic_boundaries.visualization import core
+
+    # Tune the threshold down so the O(n^2) warning fires on a tiny (fast) run.
+    monkeypatch.setattr(core, "TSNE_MAX_RECOMMENDED", 5)
+    rng = np.random.default_rng(0)
+    vectors = rng.standard_normal((12, 6)).astype(np.float32)
+    centroids = rng.standard_normal((2, 6)).astype(np.float32)
+    labels = np.array([0] * 6 + [1] * 6)
+    with pytest.warns(UserWarning, match="O\\(n\\^2\\)"):
+        core.project_to_2d(
+            vectors,
+            labels,
+            centroids,
+            method="tsne",
+            random_state=0,
+            tsne_perplexity=5.0,
+        )
+
+
 def test_project_precomputed_passthrough():
     coords = np.array([[0.0, 1.0], [2.0, 3.0], [4.0, 5.0]], dtype=np.float32)
     cents = np.array([[0.0, 0.0], [1.0, 1.0]], dtype=np.float32)
