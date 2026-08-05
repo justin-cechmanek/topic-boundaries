@@ -23,6 +23,7 @@ from topic_boundaries.sources import (
     JsonlSource,
     PdfSource,
     TextDirSource,
+    TextFileSource,
 )
 
 # Boundary methods (the two array-based rankers share a function name upstream,
@@ -59,6 +60,7 @@ __all__ = [
     "ArxivSource",
     "CsvSource",
     "TextDirSource",
+    "TextFileSource",
     "nearest_to_centroid",
     "boundary_doc_indices_per_cluster",
     "cross_boundary_hits_for_all_clusters",
