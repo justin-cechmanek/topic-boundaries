@@ -54,7 +54,6 @@ def datapoint_from_record(rec: dict[str, Any]) -> Datapoint:
         body = str(rec["abstract"])
         doc_id = str(
             rec.get("arxiv_link")
-            or rec.get("arxive_link")
             or rec.get("title")
             or rec.get("doc_id")
             or ""
@@ -65,7 +64,6 @@ def datapoint_from_record(rec: dict[str, Any]) -> Datapoint:
             rec.get("doc_id")
             or rec.get("id")
             or rec.get("arxiv_link")
-            or rec.get("arxive_link")
             or ""
         )
     elif vector is not None:

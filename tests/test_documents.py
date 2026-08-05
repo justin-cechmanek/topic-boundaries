@@ -10,7 +10,7 @@ def test_load_sample_jsonl(tmp_path: Path):
     p = tmp_path / "rows.jsonl"
     rows = [
         {"doc_id": "a", "body": "hello"},
-        {"abstract": "world", "arxive_link": "https://arxiv.org/abs/1234.5678"},
+        {"abstract": "world", "arxiv_link": "https://arxiv.org/abs/1234.5678"},
     ]
     with p.open("w", encoding="utf-8") as f:
         for r in rows:
@@ -26,7 +26,7 @@ def test_abstract_preferred_when_body_also_present():
         {
             "body": "generic body field",
             "abstract": "arxiv abstract text",
-            "arxive_link": "https://arxiv.org/abs/9999.99999",
+            "arxiv_link": "https://arxiv.org/abs/9999.99999",
         }
     )
     assert dp.body == "arxiv abstract text"
@@ -54,7 +54,6 @@ def test_arxiv_link_alias_for_abstract_records():
         ({"body": "b", "doc_id": "d1"}, "d1"),
         ({"body": "b", "id": "i1"}, "i1"),
         ({"body": "b", "arxiv_link": "l1"}, "l1"),
-        ({"body": "b", "arxive_link": "l2"}, "l2"),
     ],
 )
 def test_body_record_doc_id_fallback_chain(rec, expected_id):
