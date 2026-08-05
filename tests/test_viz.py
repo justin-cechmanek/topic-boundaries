@@ -249,11 +249,18 @@ def test_build_plotly_figure_2d_vs_3d():
     assert all(tr.z is not None for tr in fig3.data)  # z coordinate present
 
 
-def test_cluster_colors_scale_past_palette():
+def test_cluster_colors_palette_for_small_k():
+    # <= palette size uses the qualitative palette verbatim (no plotly needed).
     from topic_boundaries.visualization.figure import _PALETTE, _cluster_colors
 
-    # <= palette size: uses the qualitative palette verbatim
     assert _cluster_colors(3) == _PALETTE[:3]
+    assert _cluster_colors(len(_PALETTE)) == _PALETTE
+
+
+def test_cluster_colors_scale_past_palette():
+    pytest.importorskip("plotly")  # >10 branch samples a plotly colorscale
+    from topic_boundaries.visualization.figure import _PALETTE, _cluster_colors
+
     # > palette size: distinct color per cluster, no recycling
     n = len(_PALETTE) + 8
     colors = _cluster_colors(n)
