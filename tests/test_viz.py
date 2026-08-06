@@ -7,7 +7,7 @@ from topic_boundaries.documents import datapoint_from_record
 from topic_boundaries.visualization import boundary_highlight_indices, project_to_2d
 
 
-def test_boundary_highlight_matches_title_and_abstract():
+def test_boundary_highlight_matches_doc_id():
     dps = [
         datapoint_from_record(
             {
@@ -28,7 +28,7 @@ def test_boundary_highlight_matches_title_and_abstract():
         "method": "max_distance_sort",
         "n_clusters": 2,
         "boundary_by_cluster": [
-            [{"title": "Paper A", "abstract": "Alpha abstract."}],
+            [{"doc_id": "https://arxiv.org/abs/1111.00001", "title": "Paper A"}],
             [],
         ],
     }
@@ -339,23 +339,29 @@ def test_export_png_3d(tmp_path):
     assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
 
 
-def test_results_json_loads_with_viz_helpers():
-    # results/ is gitignored (generated artifacts), so build a realistic
-    # boundary_by_cluster payload from the committed dataset's real records and
-    # confirm the viz helper matches them back by title+abstract fingerprint.
-    root = Path(__file__).resolve().parents[1]
-    from topic_boundaries.documents import load_jsonl
+def test_write_boundary_results_round_trips_by_doc_id(tmp_path):
+    # results/ is gitignored (generated artifacts). Round-trip the real writer
+    # over the committed dataset's records and confirm the viz helper matches
+    # them back by doc_id.
+    import json
 
+    from topic_boundaries.documents import load_jsonl
+    from topic_boundaries.visualization import write_boundary_results
+
+    root = Path(__file__).resolve().parents[1]
     dps = load_jsonl(root / "datasets" / "arxiv" / "ml_ai_100.jsonl")
     picked = dps[:2]
-    data = {
-        "method": "cross_boundary",
-        "boundary_by_cluster": [
-            [
-                {"title": str(dp.meta.get("title") or ""), "abstract": dp.body}
-                for dp in picked
-            ]
-        ],
-    }
-    hi = boundary_highlight_indices(data, dps)
-    assert hi == {0, 1}
+
+    out = tmp_path / "boundary.json"
+    write_boundary_results(
+        out,
+        method="cross_boundary",
+        n_clusters=1,
+        doc_ids_by_cluster=[[dp.doc_id for dp in picked]],
+        datapoints=dps,
+    )
+    data = json.loads(out.read_text(encoding="utf-8"))
+    # Writer enriches with title/abstract but the match keys on doc_id.
+    assert data["boundary_by_cluster"][0][0]["doc_id"] == picked[0].doc_id
+    assert data["boundary_by_cluster"][0][0]["title"]
+    assert boundary_highlight_indices(data, dps) == {0, 1}
