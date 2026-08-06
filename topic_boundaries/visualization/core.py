@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import warnings
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -16,41 +18,67 @@ TSNE_PRE_PCA_DIM = 50
 TSNE_MAX_RECOMMENDED = 10_000
 
 
-def _doc_fingerprint(dp: Datapoint) -> str:
-    title = str(dp.meta.get("title") or "").strip()
-    return f"{title}\0{dp.body.strip()}"
-
-
-def _item_fingerprint(item: dict[str, Any]) -> str:
-    title = str(item.get("title") or "").strip()
-    text = str(item.get("abstract") or item.get("body") or "").strip()
-    return f"{title}\0{text}"
-
-
 def boundary_highlight_indices(
     results: dict[str, Any],
     datapoints: list[Datapoint],
 ) -> set[int]:
-    """Indices of documents that appear in boundary (or neighbor) JSON output."""
-    method = str(results.get("method") or "")
-    if method == "centroid_neighbors":
-        doc_ids: set[str] = set()
+    """Indices of documents that appear in boundary (or neighbor) JSON output.
+
+    Every result item carries the document's ``doc_id`` (see
+    ``write_boundary_results``), so matching is a doc_id lookup regardless of
+    method — centroid_neighbors nests under ``clusters``, the rest under
+    ``boundary_by_cluster``.
+    """
+    doc_ids: set[str] = set()
+    if str(results.get("method") or "") == "centroid_neighbors":
         for c in results.get("clusters") or []:
             for row in c.get("nearest_to_centroid") or []:
-                did = str(row.get("doc_id") or "")
-                if did:
-                    doc_ids.add(did)
-        return {i for i, d in enumerate(datapoints) if d.doc_id in doc_ids}
+                doc_ids.add(str(row.get("doc_id") or ""))
+    else:
+        for cluster_list in results.get("boundary_by_cluster") or []:
+            for item in cluster_list:
+                doc_ids.add(str(item.get("doc_id") or ""))
+    doc_ids.discard("")
+    return {i for i, d in enumerate(datapoints) if d.doc_id in doc_ids}
 
-    fps: set[str] = set()
-    for cluster_list in results.get("boundary_by_cluster") or []:
-        for item in cluster_list:
-            fps.add(_item_fingerprint(item))
-    out: set[int] = set()
-    for i, dp in enumerate(datapoints):
-        if _doc_fingerprint(dp) in fps:
-            out.add(i)
-    return out
+
+def write_boundary_results(
+    path: str | Path,
+    *,
+    method: str,
+    n_clusters: int,
+    doc_ids_by_cluster: list[list[str]],
+    datapoints: list[Datapoint] | None = None,
+) -> dict[str, Any]:
+    """Serialize per-cluster boundary hits to the JSON the viz helpers consume.
+
+    ``doc_ids_by_cluster[c]`` is the list of hit doc_ids for cluster ``c`` (the
+    boundary methods' hits all carry a doc_id). Each item is written as
+    ``{"doc_id": ...}``; when ``datapoints`` is given, ``title``/``abstract`` are
+    added for human-readable inspection — ``boundary_highlight_indices`` keys on
+    doc_id either way.
+    """
+    by_id = {d.doc_id: d for d in datapoints} if datapoints is not None else {}
+    clusters: list[list[dict[str, str]]] = []
+    for ids in doc_ids_by_cluster:
+        items: list[dict[str, str]] = []
+        for did in ids:
+            item = {"doc_id": did}
+            dp = by_id.get(did)
+            if dp is not None:
+                item["title"] = str(dp.meta.get("title") or "")
+                item["abstract"] = dp.body
+            items.append(item)
+        clusters.append(items)
+    payload: dict[str, Any] = {
+        "method": method,
+        "n_clusters": n_clusters,
+        "boundary_by_cluster": clusters,
+    }
+    Path(path).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    return payload
 
 
 def project_to_2d(

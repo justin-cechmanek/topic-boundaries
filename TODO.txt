@@ -33,15 +33,14 @@ PR-C3  Simplify config n_init parsing  (config.py, ~-12 lines)
       (config.py:10-22,64)
 
 PR-C4  Match boundary highlights by doc_id  (core.py, ~-15 lines)
-  [ ] boundary_highlight_indices hand-rolls two title+body fingerprint helpers;
+  [x] boundary_highlight_indices hand-rolls two title+body fingerprint helpers;
       the centroid_neighbors branch above already matches by doc_id and boundary
       hits carry doc_id too. Match by doc_id everywhere, delete helpers.
-      VERIFY boundary_by_cluster items include doc_id first.
-  BLOCKED: verify fails. Stored result fixtures (results/*.json) carry only
-  title+abstract, no doc_id, and the writer that produced them was the removed
-  CLI — nothing emits boundary_by_cluster now. Switching to doc_id would make
-  those fixtures highlight nothing. Do this together with a new JSON writer that
-  serializes hit.doc_id (hits already carry it), then regenerate the fixtures. (core.py:12-20,38-46)
+      Done: added write_boundary_results (serializes hit doc_id, enriches with
+      title/abstract for humans); boundary_highlight_indices now keys on doc_id
+      for both branches; fingerprint helpers deleted. The earlier BLOCKED note
+      was stale — results/*.json is gitignored/untracked and no committed test
+      reads it, so there were no committed fixtures to regenerate. (core.py)
 
 PR-C5  Fix arxive_link typo  (LOW priority; touches stored datasets + 4 tests)
   [x] arxive_link (typo) handled as fallback in 2 places because
@@ -62,8 +61,12 @@ PR-F1  Centralize scattered defaults into config.Settings  (config.py:25)
       through the pipeline is PR-T5.
 
 PR-F2  Derive embedding dim from the embedder  (schema, small)
-  [ ] Embedding dim (384) hardcoded in schema.yml:9. Derive from embedder.dims
+  [x] Embedding dim (384) hardcoded in schema.yml:9. Derive from embedder.dims
       so swapping models doesn't require hand-editing the schema.
+      Done (already implemented): schema_builder.load_schema_for_dims overrides
+      the vector field's dims at load time; pipeline threads embedder.dims (or
+      the embedded matrix width) through open_index. schema.yml's 384 is now a
+      documented default. Tested in test_schema_builder.py.
 
 
 ================================================================
