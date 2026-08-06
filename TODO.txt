@@ -183,6 +183,10 @@ TUNING
 PR-T1  Boundary-quality metric  (enables T2 + T4)
   [ ] No quality metric anywhere. Add cluster-separation / silhouette score to
       judge n_clusters and compare boundary methods.
+      note: sklearn.metrics.silhouette_score IS the metric (defaults to
+      euclidean, already raises for k<2 or k==n) — a wrapper adds nothing. The
+      real deliverable is USING it: sweep k / score runs. Fold that into T2
+      (auto k-selection) and T4 (sweep harness) rather than shipping T1 alone.
 
 PR-T2  Auto k-selection  (needs: T1)
   [ ] n_clusters is a required manual arg (pipeline.py:26, clustering.py:9).
