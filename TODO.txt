@@ -164,9 +164,14 @@ PR-P2  Batch/vectorize per-cluster loops  (all boundary methods)
       max_distance_sort:87, cross_boundary:61). Batch/vectorize.
 
 PR-P3  Convex-hull high-D handling  (convex_hull/boundaries.py:11,28-35)
-  [ ] Caps to max_hull_dim=12 then silently falls back to 2 PC1 extrema on ANY
+  [x] Caps to max_hull_dim=12 then silently falls back to 2 PC1 extrema on ANY
       exception. Log how often the fallback fires; consider dropping hull for
       high-D.
+      Done: narrowed the bare `except Exception` to scipy QhullError (the actual
+      degenerate-hull type) so unexpected errors propagate instead of silently
+      degrading; each fallback now logs a WARNING with n/dim + the Qhull reason,
+      making the fallback rate observable. "Drop hull for high-D" left deferred
+      (ponytail note) until the logged rate shows it's worth it. + tests.
 
 PR-P4  Chunk Voronoi distance matrix  (voronoi_boundary/boundaries.py:47-51)
   [ ] Materializes a dense (n_samples, n_clusters) matrix. Chunk for large n.

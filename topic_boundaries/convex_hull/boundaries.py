@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 import numpy as np
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull, QhullError
 from sklearn.decomposition import PCA
+
+logger = logging.getLogger(__name__)
 
 
 def hull_boundary_indices(
@@ -17,6 +21,10 @@ def hull_boundary_indices(
     Full-dimensional Quickhull becomes impractical for typical embedding dims;
     we follow the README's Quickhull idea on a PCA-compressed representation of
     the cluster (still computed via Qhull underneath SciPy's ConvexHull).
+
+    Degenerate clusters (coplanar/coincident after PCA) can't form a hull; those
+    fall back to the two PC1 extrema and log a WARNING so the fallback rate is
+    visible rather than silent. Non-degenerate Qhull failures now propagate.
     """
     n, d = vectors.shape
     if n <= 2:
@@ -27,8 +35,17 @@ def hull_boundary_indices(
     X = PCA(n_components=n_comp, random_state=random_state).fit_transform(vectors)
     try:
         hull = ConvexHull(X, qhull_options="Qt")
-    except Exception:
-        # Degenerate configurations (e.g. coplanar); fall back to extrema on first PC.
+    except QhullError as e:
+        # ponytail: hull still works up to max_hull_dim; "drop hull for high-D"
+        # (TODO PR-P3) stays deferred until the logged fallback rate says it hurts.
+        logger.warning(
+            "convex hull degenerate for n=%d points in %d-D (PCA of %d-D); "
+            "falling back to PC1 extrema. Qhull: %s",
+            n,
+            n_comp,
+            d,
+            str(e).splitlines()[0] if str(e) else e.__class__.__name__,
+        )
         pc1 = X[:, 0]
         i_min = int(np.argmin(pc1))
         i_max = int(np.argmax(pc1))

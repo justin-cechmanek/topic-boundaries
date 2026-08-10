@@ -38,6 +38,25 @@ def test_hull_degenerate_falls_back_to_pc1_extrema():
     assert ix.tolist() == [0]
 
 
+def test_hull_degenerate_logs_the_fallback(caplog):
+    # PR-P3: the fallback must be observable, not silent.
+    X = np.ones((5, 3), dtype=np.float32)
+    with caplog.at_level("WARNING", logger="topic_boundaries.convex_hull.boundaries"):
+        hull_boundary_indices(X)
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert len(warnings) == 1
+    assert "degenerate" in warnings[0].getMessage()
+
+
+def test_hull_clean_input_does_not_log_fallback(caplog):
+    # A real hull must not trip the fallback (no false-positive warnings).
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((40, 8)).astype(np.float32)
+    with caplog.at_level("WARNING", logger="topic_boundaries.convex_hull.boundaries"):
+        hull_boundary_indices(X, max_hull_dim=5)
+    assert caplog.records == []
+
+
 def test_boundary_doc_indices_maps_to_global_and_handles_empty():
     # cluster 0 = rows 0,2,4 ; cluster 1 = rows 1,3 ; cluster 2 = empty
     labels = np.array([0, 1, 0, 1, 0])
