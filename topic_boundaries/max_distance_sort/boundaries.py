@@ -38,43 +38,62 @@ def furthest_from_centroid(
     """
     Within-cluster points ranked by greatest distance to the centroid.
 
-    Uses RedisVL ``VectorQuery`` so distances match the index metric (cosine).
-    Results are nearest-first; we reverse to rank farthest first. Requires a
-    cluster document count so ``num_results`` covers the whole cluster
-    (with ``hybrid_policy='ADHOC_BF'`` so filtered vectors are scored exhaustively).
+    Distances match the index metric (cosine). With ``top_n`` set, we run a
+    server-side "farthest" query: querying the HNSW index with the *negated*
+    centroid returns the nearest neighbors of ``-centroid``, which are exactly
+    the points farthest from ``centroid`` under cosine — so the top-``top_n``
+    come back without pulling the whole cluster. The reported distance is the
+    cosine distance to ``centroid``, recovered as ``2 - d(-centroid)``.
+    (Cosine-only: ``cos(x, -c) = -cos(x, c)``.)
+
+    With ``top_n=None`` the full cluster is ranked, which needs an exhaustive
+    filtered scan (``ADHOC_BF``, nearest-first then reversed).
     """
-    n_docs = _cluster_doc_count(index, cluster_id)
-    if n_docs == 0:
-        return []
+    centroid_arr = np.asarray(centroid, dtype=np.float32)
 
-    centroid_list = np.asarray(centroid, dtype=np.float32).tolist()
-    flt = Tag("cluster_id") == str(cluster_id)
-    q = VectorQuery(
-        vector=centroid_list,
-        vector_field_name="embedding",
-        num_results=n_docs,
-        return_fields=["doc_id", "body"],
-        filter_expression=flt,
-        hybrid_policy="ADHOC_BF",
-    )
-    rows = index.query(q)
-    # Nearest/lowest distance first from the server → farthest first for boundary ranking.
-    rows = list(reversed(rows))
     if top_n is not None:
-        rows = rows[:top_n]
-
-    out: list[BoundaryHit] = []
-    for rank, row in enumerate(rows):
-        out.append(
+        q = VectorQuery(
+            vector=(-centroid_arr).tolist(),
+            vector_field_name="embedding",
+            num_results=top_n,
+            return_fields=["doc_id", "body"],
+            filter_expression=Tag("cluster_id") == str(cluster_id),
+        )
+        rows = index.query(q)  # already farthest-first (nearest to -centroid)
+        return [
             BoundaryHit(
                 cluster_id=cluster_id,
                 doc_id=str(row["doc_id"]),
                 body=str(row.get("body", "")),
-                distance=_parse_vector_distance(row),
+                distance=2.0 - _parse_vector_distance(row),
                 rank_in_cluster=rank,
             )
+            for rank, row in enumerate(rows)
+        ]
+
+    n_docs = _cluster_doc_count(index, cluster_id)
+    if n_docs == 0:
+        return []
+    q = VectorQuery(
+        vector=centroid_arr.tolist(),
+        vector_field_name="embedding",
+        num_results=n_docs,
+        return_fields=["doc_id", "body"],
+        filter_expression=Tag("cluster_id") == str(cluster_id),
+        hybrid_policy="ADHOC_BF",
+    )
+    # Nearest/lowest distance first from the server → farthest first for boundary ranking.
+    rows = list(reversed(index.query(q)))
+    return [
+        BoundaryHit(
+            cluster_id=cluster_id,
+            doc_id=str(row["doc_id"]),
+            body=str(row.get("body", "")),
+            distance=_parse_vector_distance(row),
+            rank_in_cluster=rank,
         )
-    return out
+        for rank, row in enumerate(rows)
+    ]
 
 
 def boundary_rankings_for_all_clusters(

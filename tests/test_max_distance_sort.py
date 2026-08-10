@@ -27,6 +27,21 @@ def test_top_n_slices(loaded_corpus):
 
 
 @pytest.mark.integration
+def test_top_n_farthest_query_matches_exhaustive_scan(loaded_corpus):
+    """The server-side 'farthest' query (top_n set, negated-centroid) must give
+    the same order AND cosine distances as the exhaustive whole-cluster scan."""
+    index, x = loaded_corpus
+    centroid = np.array(x, dtype=np.float32)
+    fast = furthest_from_centroid(index, 0, centroid, top_n=3)  # negated-centroid path
+    exhaustive = furthest_from_centroid(index, 0, centroid)      # top_n=None path
+    assert [h.doc_id for h in fast] == [h.doc_id for h in exhaustive]
+    # c0_far is 90deg from the x-axis centroid -> cosine distance 1 - cos(90) = 1.0.
+    assert fast[0].distance == pytest.approx(1.0, abs=1e-4)
+    for a, b in zip(fast, exhaustive):
+        assert a.distance == pytest.approx(b.distance, abs=1e-4)
+
+
+@pytest.mark.integration
 def test_empty_cluster_returns_empty(loaded_corpus):
     index, x = loaded_corpus
     assert furthest_from_centroid(index, 42, np.array(x, dtype=np.float32)) == []

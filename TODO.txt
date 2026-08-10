@@ -154,10 +154,18 @@ PERFORMANCE IN HIGH DIMENSIONS
 
 PR-P1  Replace brute-force cluster scans  (max_distance_sort, cross_boundary,
        centroid_neighbors)
-  [ ] num_results=whole cluster + hybrid_policy="ADHOC_BF" defeats the HNSW
+  [x] num_results=whole cluster + hybrid_policy="ADHOC_BF" defeats the HNSW
       index (max_distance_sort:52-62, cross_boundary:35, centroid_neighbors:31).
       Use server-side top-k / a "farthest" query instead of pulling full
       clusters to the client.
+      Done: centroid_neighbors + cross_boundary now use num_results=k with the
+      HNSW index (no ADHOC_BF, no whole-cluster pull). max_distance_sort runs a
+      server-side "farthest" query for bounded top_n by querying the negated
+      centroid (nearest to -centroid == farthest from centroid under cosine),
+      recovering the cosine distance as 2 - d(-centroid). top_n=None still ranks
+      the full cluster via the exhaustive ADHOC_BF scan (no bounded k to push
+      down). + test that the fast path matches the exhaustive scan on order and
+      distance.
 
 PR-P2  Batch/vectorize per-cluster loops  (all boundary methods)
   [ ] Python for c in range(n_clusters) loops (convex_hull:46, voronoi:88,
