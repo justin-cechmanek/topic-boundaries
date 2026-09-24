@@ -60,36 +60,30 @@ def furthest_from_centroid(
             filter_expression=Tag("cluster_id") == str(cluster_id),
         )
         rows = index.query(q)  # already farthest-first (nearest to -centroid)
-        return [
-            BoundaryHit(
-                cluster_id=cluster_id,
-                doc_id=str(row["doc_id"]),
-                body=str(row.get("body", "")),
-                distance=2.0 - _parse_vector_distance(row),
-                rank_in_cluster=rank,
-            )
-            for rank, row in enumerate(rows)
-        ]
-
-    n_docs = _cluster_doc_count(index, cluster_id)
-    if n_docs == 0:
-        return []
-    q = VectorQuery(
-        vector=centroid_arr.tolist(),
-        vector_field_name="embedding",
-        num_results=n_docs,
-        return_fields=["doc_id", "body"],
-        filter_expression=Tag("cluster_id") == str(cluster_id),
-        hybrid_policy="ADHOC_BF",
-    )
-    # Nearest/lowest distance first from the server → farthest first for boundary ranking.
-    rows = list(reversed(index.query(q)))
+    else:
+        n_docs = _cluster_doc_count(index, cluster_id)
+        if n_docs == 0:
+            return []
+        q = VectorQuery(
+            vector=centroid_arr.tolist(),
+            vector_field_name="embedding",
+            num_results=n_docs,
+            return_fields=["doc_id", "body"],
+            filter_expression=Tag("cluster_id") == str(cluster_id),
+            hybrid_policy="ADHOC_BF",
+        )
+        # Nearest/lowest distance first from the server → farthest first for boundary ranking.
+        rows = list(reversed(index.query(q)))
     return [
         BoundaryHit(
             cluster_id=cluster_id,
             doc_id=str(row["doc_id"]),
             body=str(row.get("body", "")),
-            distance=_parse_vector_distance(row),
+            distance=(
+                2.0 - _parse_vector_distance(row)
+                if top_n is not None
+                else _parse_vector_distance(row)
+            ),
             rank_in_cluster=rank,
         )
         for rank, row in enumerate(rows)
