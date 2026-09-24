@@ -160,12 +160,10 @@ PR-P1  Replace brute-force cluster scans  (max_distance_sort, cross_boundary,
       clusters to the client.
       Done: centroid_neighbors + cross_boundary now use num_results=k with the
       HNSW index (no ADHOC_BF, no whole-cluster pull). max_distance_sort runs a
-      server-side "farthest" query for bounded top_n by querying the negated
-      centroid (nearest to -centroid == farthest from centroid under cosine),
-      recovering the cosine distance as 2 - d(-centroid). top_n=None still ranks
-      the full cluster via the exhaustive ADHOC_BF scan (no bounded k to push
-      down). + test that the fast path matches the exhaustive scan on order and
-      distance.
+      server-side "farthest" query for bounded cosine top_n by querying the
+      negated centroid, recovering cosine distance as 2 - d(-centroid). L2 and
+      other metrics, plus top_n=None, rank the full cluster via ADHOC_BF; L2
+      scores are converted to Euclidean distance. Tests cover both paths.
 
 PR-P2  Batch/vectorize per-cluster loops  (all boundary methods)
   [ ] Python for c in range(n_clusters) loops (convex_hull:46, voronoi:88,

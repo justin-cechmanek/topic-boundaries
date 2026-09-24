@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 
 import numpy as np
 from redisvl.query import CountQuery, VectorQuery
@@ -35,23 +36,17 @@ def furthest_from_centroid(
     centroid: np.ndarray,
     top_n: int | None = None,
 ) -> list[BoundaryHit]:
-    """
-    Within-cluster points ranked by greatest distance to the centroid.
+    """Rank within-cluster points by the index's distance metric.
 
-    Distances match the index metric (cosine). With ``top_n`` set, we run a
-    server-side "farthest" query: querying the HNSW index with the *negated*
-    centroid returns the nearest neighbors of ``-centroid``, which are exactly
-    the points farthest from ``centroid`` under cosine — so the top-``top_n``
-    come back without pulling the whole cluster. The reported distance is the
-    cosine distance to ``centroid``, recovered as ``2 - d(-centroid)``.
-    (Cosine-only: ``cos(x, -c) = -cos(x, c)``.)
-
-    With ``top_n=None`` the full cluster is ranked, which needs an exhaustive
-    filtered scan (``ADHOC_BF``, nearest-first then reversed).
+    Bounded cosine queries use nearest neighbors of the negated centroid;
+    other metrics and full rankings use an exhaustive filtered scan.
+    Redis's squared L2 score is converted to Euclidean distance.
     """
     centroid_arr = np.asarray(centroid, dtype=np.float32)
+    metric = index.schema.fields["embedding"].attrs.distance_metric.value
+    cosine_top_n = top_n is not None and metric == "COSINE"
 
-    if top_n is not None:
+    if cosine_top_n:
         q = VectorQuery(
             vector=(-centroid_arr).tolist(),
             vector_field_name="embedding",
@@ -74,20 +69,25 @@ def furthest_from_centroid(
         )
         # Nearest/lowest distance first from the server → farthest first for boundary ranking.
         rows = list(reversed(index.query(q)))
-    return [
-        BoundaryHit(
-            cluster_id=cluster_id,
-            doc_id=str(row["doc_id"]),
-            body=str(row.get("body", "")),
-            distance=(
-                2.0 - _parse_vector_distance(row)
-                if top_n is not None
-                else _parse_vector_distance(row)
-            ),
-            rank_in_cluster=rank,
+        if top_n is not None:
+            rows = rows[:top_n]
+    hits = []
+    for rank, row in enumerate(rows):
+        distance = _parse_vector_distance(row)
+        if cosine_top_n:
+            distance = 2.0 - distance
+        elif metric == "L2":
+            distance = sqrt(distance)
+        hits.append(
+            BoundaryHit(
+                cluster_id=cluster_id,
+                doc_id=str(row["doc_id"]),
+                body=str(row.get("body", "")),
+                distance=distance,
+                rank_in_cluster=rank,
+            )
         )
-        for rank, row in enumerate(rows)
-    ]
+    return hits
 
 
 def boundary_rankings_for_all_clusters(
