@@ -58,18 +58,8 @@ The package installs and imports as **`topic_boundaries`** (e.g. `from topic_bou
 
 ## Data sources
 
-A **data source** is anything that produces a `list[Datapoint]` for the
-pipeline. The protocol is one method:
-
-```python
-from typing import Protocol
-from topic_boundaries import Datapoint
-
-class DataSource(Protocol):
-    def load(self) -> list[Datapoint]: ...
-```
-
-Implement `load()` on your own class for anything exotic; a `Datapoint` needs a
+A **data source** is anything with a `load()` method that returns a
+`list[Datapoint]` for the pipeline. A `Datapoint` needs a
 `doc_id` and either a `body` (to embed) or a precomputed `vector`. Built-ins in
 `topic_boundaries.sources`:
 
@@ -132,4 +122,4 @@ Topic centroids are useful on their own: the datapoints nearest a centroid summa
 
 ## Dependencies
 
-Runtime dependencies are listed in **`pyproject.toml`** (`[project] dependencies`). The root **`requirements.txt`** mirrors those pins for workflows that prefer a flat file; prefer `pip install -e ".[dev]"` when developing.
+Runtime dependencies are listed in **`pyproject.toml`** (`[project] dependencies`). Use `pip install -e ".[dev]"` when developing.

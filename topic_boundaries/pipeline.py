@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from topic_boundaries.clustering import cluster_counts, cluster_embeddings
+from topic_boundaries.clustering import cluster_embeddings
 from topic_boundaries.config import DEFAULT_EMBED_BATCH_SIZE
 from topic_boundaries.documents import Datapoint
 from topic_boundaries.embedding import Embedder, HFTextEmbedder
@@ -81,7 +81,7 @@ def run_pipeline(
         kmeans_n_init=kmeans_n_init,
     )
 
-    counts = cluster_counts(labels, n_clusters)
+    counts = np.bincount(labels, minlength=n_clusters)
     if (counts == 0).any():
         raise RuntimeError(
             "Some clusters are empty; decrease n_clusters or increase dataset size."

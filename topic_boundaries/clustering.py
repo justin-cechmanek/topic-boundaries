@@ -23,8 +23,3 @@ def cluster_embeddings(
     )
     labels = km.fit_predict(vectors)
     return labels.astype(np.int64), km.cluster_centers_.astype(np.float32)
-
-
-def cluster_counts(labels: np.ndarray, n_clusters: int) -> np.ndarray:
-    counts = np.bincount(labels, minlength=n_clusters)
-    return counts

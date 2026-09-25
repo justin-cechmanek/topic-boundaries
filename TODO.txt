@@ -72,7 +72,7 @@ PR-F2  Derive embedding dim from the embedder  (schema, small)
 ================================================================
 DATA-SOURCE LOADERS  (each = one source + its tests)
 ================================================================
-All loaders live in sources.py as DataSource classes -> list[Datapoint].
+All loaders live in sources.py as classes returning list[Datapoint].
 Already built: JsonlSource, PdfSource(single), ArxivSource(search),
 TextDirSource(*.txt), CsvSource.
 
@@ -101,8 +101,8 @@ PR-L4  Generic loader + docs  (sources.py, README)
       dict-iterable source.
       Done: RecordsSource (any dict iterable) + JsonSource (JSON array file);
       CsvSource now delegates to RecordsSource.
-  [x] Document the DataSource protocol in README.
-      Done: "Data sources" section (protocol + built-ins table + mapping).
+  [x] Document the load() convention in README.
+      Done: "Data sources" section (built-ins table + mapping).
 
 
 ================================================================

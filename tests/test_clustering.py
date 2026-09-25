@@ -3,7 +3,7 @@ import pytest
 
 pytest.importorskip("sklearn")
 
-from topic_boundaries.clustering import cluster_counts, cluster_embeddings
+from topic_boundaries.clustering import cluster_embeddings
 
 
 def test_cluster_embeddings_groups_separated_points():
@@ -26,9 +26,3 @@ def test_cluster_embeddings_deterministic_with_fixed_seed():
     a, _ = cluster_embeddings(vectors, 3, random_state=42)
     b, _ = cluster_embeddings(vectors, 3, random_state=42)
     np.testing.assert_array_equal(a, b)
-
-
-def test_cluster_counts_reports_zero_for_absent_cluster():
-    labels = np.array([0, 0, 1])
-    counts = cluster_counts(labels, 3)
-    np.testing.assert_array_equal(counts, np.array([2, 1, 0]))
