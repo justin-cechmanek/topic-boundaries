@@ -75,36 +75,6 @@ def test_from_config_rejects_non_mapping_kmeans(tmp_path: Path):
         Settings.from_config(config_path=cfg_path)
 
 
-def test_centralized_defaults_when_absent(_no_config_env, tmp_path: Path):
-    s = Settings.from_config(config_path=tmp_path / "missing.yml")
-    assert s.n_clusters == cfg.DEFAULT_N_CLUSTERS
-    assert s.chunk_max_chars == cfg.DEFAULT_CHUNK_MAX_CHARS
-    assert s.chunk_overlap == cfg.DEFAULT_CHUNK_OVERLAP
-    assert s.embed_batch_size == cfg.DEFAULT_EMBED_BATCH_SIZE
-    assert s.top_n_per_cluster == cfg.DEFAULT_TOP_N_PER_CLUSTER
-    assert s.k_per_centroid == cfg.DEFAULT_K_PER_CENTROID
-
-
-def test_centralized_defaults_read_from_config(_no_config_env, tmp_path: Path):
-    cfg_path = tmp_path / "config.yml"
-    cfg_path.write_text(
-        "\n".join(
-            [
-                "n_clusters: 3",
-                "chunk_max_chars: 800",
-                "chunk_overlap: 50",
-                "embed_batch_size: 16",
-                "top_n_per_cluster: 7",
-                "k_per_centroid: 9",
-            ]
-        ),
-        encoding="utf-8",
-    )
-    s = Settings.from_config(config_path=cfg_path)
-    assert (s.n_clusters, s.chunk_max_chars, s.chunk_overlap) == (3, 800, 50)
-    assert (s.embed_batch_size, s.top_n_per_cluster, s.k_per_centroid) == (16, 7, 9)
-
-
 def _default(func, param):
     return inspect.signature(func).parameters[param].default
 

@@ -15,8 +15,7 @@ import time
 import urllib.parse
 import xml.etree.ElementTree as ET
 from pathlib import Path
-
-import requests
+from urllib.request import urlopen
 
 ARXIV_API = "https://export.arxiv.org/api/query"
 ARXIV_PDF = "https://arxiv.org/pdf"
@@ -47,9 +46,8 @@ def fetch_page(search_query: str, start: int, max_results: int) -> ET.Element:
         "sortOrder": "descending",
     }
     url = f"{ARXIV_API}?{urllib.parse.urlencode(params)}"
-    r = requests.get(url, timeout=60)
-    r.raise_for_status()
-    return ET.fromstring(r.content)
+    with urlopen(url, timeout=60) as response:
+        return ET.fromstring(response.read())
 
 
 def parse_entry(entry: ET.Element) -> dict:
@@ -90,17 +88,15 @@ def fetch_paper(id_or_url: str) -> dict:
     """Metadata/abstract record for a single arXiv paper by id or URL."""
     arxiv_id = normalize_arxiv_id(id_or_url)
     url = f"{ARXIV_API}?{urllib.parse.urlencode({'id_list': arxiv_id, 'max_results': 1})}"
-    r = requests.get(url, timeout=60)
-    r.raise_for_status()
-    return _paper_record_from_feed(r.content)
+    with urlopen(url, timeout=60) as response:
+        return _paper_record_from_feed(response.read())
 
 
 def download_pdf(id_or_url: str, dest: Path) -> Path:
     """Download a paper's PDF to ``dest`` and return the path."""
     arxiv_id = normalize_arxiv_id(id_or_url)
-    r = requests.get(f"{ARXIV_PDF}/{arxiv_id}.pdf", timeout=120)
-    r.raise_for_status()
-    dest.write_bytes(r.content)
+    with urlopen(f"{ARXIV_PDF}/{arxiv_id}.pdf", timeout=120) as response:
+        dest.write_bytes(response.read())
     return dest
 
 

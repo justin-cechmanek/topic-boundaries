@@ -1,9 +1,13 @@
+from io import BytesIO
 import xml.etree.ElementTree as ET
 
 import pytest
 
 from topic_boundaries.collect_datasets import (
     _paper_record_from_feed,
+    download_pdf,
+    fetch_page,
+    fetch_paper,
     normalize_arxiv_id,
     parse_entry,
 )
@@ -81,3 +85,20 @@ def test_paper_record_from_feed_raises_on_empty():
     empty = b'<feed xmlns="http://www.w3.org/2005/Atom"></feed>'
     with pytest.raises(ValueError):
         _paper_record_from_feed(empty)
+
+
+def test_http_helpers_fetch_feed_and_pdf(monkeypatch, tmp_path):
+    feed = ('<feed xmlns="http://www.w3.org/2005/Atom">' + ENTRY_XML + "</feed>").encode()
+    calls = []
+
+    def fake_urlopen(url, timeout):
+        calls.append((url, timeout))
+        return BytesIO(b"%PDF" if url.endswith(".pdf") else feed)
+
+    monkeypatch.setattr("topic_boundaries.collect_datasets.urlopen", fake_urlopen)
+    root = fetch_page("cat:cs.CL", 0, 1)
+    assert root.find("{http://www.w3.org/2005/Atom}entry") is not None
+    assert fetch_paper("2403.15001")["title"] == "A Study of Topic Boundaries"
+    pdf = download_pdf("2403.15001", tmp_path / "paper.pdf")
+    assert pdf.read_bytes() == b"%PDF"
+    assert [timeout for _, timeout in calls] == [60, 60, 120]

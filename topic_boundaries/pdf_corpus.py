@@ -15,19 +15,14 @@ from topic_boundaries.config import DEFAULT_CHUNK_MAX_CHARS, DEFAULT_CHUNK_OVERL
 from topic_boundaries.documents import Datapoint
 
 
-def _require_pypdf():
+def read_pdf_text(path: Path) -> str:
     try:
-        from pypdf import PdfReader  # noqa: F401
+        from pypdf import PdfReader
     except ImportError as e:
         raise ImportError(
             "PDF support requires pypdf. Install with: pip install pypdf "
             'or pip install -e ".[corpus]"'
         ) from e
-
-
-def read_pdf_text(path: Path) -> str:
-    _require_pypdf()
-    from pypdf import PdfReader
 
     reader = PdfReader(str(path))
     parts: list[str] = []

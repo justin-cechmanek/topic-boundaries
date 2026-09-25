@@ -1,7 +1,7 @@
 """Data sources: anything that produces a list[Datapoint].
 
 Built-ins cover the common cases (JSONL, PDF, arXiv, CSV, a directory of text
-files). Implement the DataSource protocol for anything exotic.
+files). A custom loader only needs a load() method.
 """
 
 from __future__ import annotations
@@ -10,17 +10,11 @@ import csv
 import json
 import re
 from pathlib import Path
-from typing import Any, Iterable, Protocol, runtime_checkable
+from typing import Any, Iterable
 
 from topic_boundaries.config import DEFAULT_CHUNK_MAX_CHARS, DEFAULT_CHUNK_OVERLAP
 from topic_boundaries.documents import Datapoint, datapoint_from_record
 from topic_boundaries.pdf_corpus import chunk_text, pdf_to_datapoints
-
-
-@runtime_checkable
-class DataSource(Protocol):
-    def load(self) -> list[Datapoint]:
-        ...
 
 
 def _parse_vector(value: Any) -> list[float]:
