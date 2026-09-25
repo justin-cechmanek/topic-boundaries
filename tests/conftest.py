@@ -82,9 +82,9 @@ def make_index(redis_url):
 
     created = []
 
-    def _make(doc_ids, bodies, vectors, cluster_labels, dim: int = DIM):
+    def _make(doc_ids, bodies, vectors, cluster_labels, dim: int = DIM, schema_path=None):
         vectors = np.asarray(vectors, dtype=np.float32)
-        index = open_index(None, redis_url, dim)
+        index = open_index(schema_path, redis_url, dim)
         records = records_for_redis(
             list(doc_ids), list(bodies), vectors, np.asarray(cluster_labels)
         )

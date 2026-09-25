@@ -24,6 +24,9 @@ def nearest_outside_cluster(
 ) -> list[CrossBoundaryHit]:
     """
     Nearest vectors to `centroid` whose cluster tag differs from `source_cluster_id`.
+
+    Server-side top-``k`` via the HNSW index (no ``ADHOC_BF``: an exhaustive
+    filtered scan would defeat the index for the sake of a k-nearest query).
     """
     flt = Tag("cluster_id") != str(source_cluster_id)
     q = VectorQuery(
@@ -32,7 +35,6 @@ def nearest_outside_cluster(
         num_results=k,
         return_fields=["doc_id", "body", "cluster_id"],
         filter_expression=flt,
-        hybrid_policy="ADHOC_BF",
     )
     rows = index.query(q)
     hits: list[CrossBoundaryHit] = []
