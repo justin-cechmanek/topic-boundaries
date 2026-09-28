@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from topic_boundaries import Datapoint, index_clustered_datapoints
 from topic_boundaries.indexing import records_for_redis
 from topic_boundaries.max_distance_sort.boundaries import _cluster_doc_count
 
@@ -20,6 +21,19 @@ def test_records_for_redis_serialization():
     np.testing.assert_array_equal(
         np.frombuffer(blob, dtype=np.float32), vectors[0]
     )
+
+
+def test_index_rejects_misaligned_labels_before_connecting():
+    datapoints = [Datapoint("a"), Datapoint("b")]
+    vectors = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+    with pytest.raises(ValueError, match="aligned"):
+        index_clustered_datapoints(
+            datapoints,
+            vectors,
+            np.array([0]),
+            redis_url="redis://localhost:6379/0",
+            overwrite_index=True,
+        )
 
 
 # --- integration: real Redis ---

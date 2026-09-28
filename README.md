@@ -31,30 +31,38 @@ A **topic boundary** is the set of datapoints (ideas, statements, concepts) that
    - `kmeans.random_state`
    - `kmeans.n_init`
 
-5. **Use it from Python.** Load a source, run the pipeline, then apply a boundary method:
+5. **Use it from Python.** Load a source, embed and cluster its datapoints, index them, then apply a boundary method:
 
    ```python
-   from topic_boundaries import JsonlSource, Settings, run_pipeline, max_distance_rankings
+   from topic_boundaries import (
+       JsonlSource,
+       Settings,
+       embed_and_cluster_datapoints,
+       index_clustered_datapoints,
+       max_distance_rankings,
+   )
 
    settings = Settings.from_config()
    datapoints = JsonlSource("datasets/sample.jsonl").load()
-   state = run_pipeline(
+   vectors, labels, centroids = embed_and_cluster_datapoints(
        datapoints,
-       redis_url=settings.redis_url,
        n_clusters=5,
        embedding_model=settings.embedding_model,
-       schema_path=None,
+   )
+   index = index_clustered_datapoints(
+       datapoints,
+       vectors,
+       labels,
+       redis_url=settings.redis_url,
        overwrite_index=True,
    )
-   hits = max_distance_rankings(
-       state.indexed.index, state.centroids, state.indexed.n_clusters
-   )
+   hits = max_distance_rankings(index, centroids, n_clusters=5)
    ```
 
    `Settings.from_config()` reads defaults (Redis URL, embedding model, KMeans
    params) from `config.yml`.
 
-The package installs and imports as **`topic_boundaries`** (e.g. `from topic_boundaries import Datapoint, CsvSource, run_pipeline`).
+The package installs and imports as **`topic_boundaries`** (e.g. `from topic_boundaries import Datapoint, CsvSource, embed_and_cluster_datapoints`).
 
 ## Data sources
 
