@@ -32,7 +32,7 @@ datapoints = CsvSource(
 
 ## Precomputed vectors
 
-Use `PrecomputedEmbedder` when every datapoint has a vector of the same length. The vectors may come from another embedding model or a non-text domain. The [Precomputed Vectors example](../examples/precomputed_vectors.md) shows the complete pipeline.
+Use `PrecomputedEmbedder` when every datapoint has a vector of the same length. The vectors may come from another embedding model or a non-text domain.
 
 ## Text and PDF chunks
 

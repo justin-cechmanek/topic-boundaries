@@ -23,12 +23,6 @@ pip install -e ".[viz]"     # Plotly, Matplotlib, and UMAP visualization
 
 The base install includes the default sentence-transformers embedder. Its model weights may download on first use. Use `PrecomputedEmbedder` if you already have vectors.
 
-## Preview this documentation locally
+## View this documentation
 
-```bash
-pip install -e ".[docs]"
-sphinx-build -b html -W --keep-going docs docs/_build/html
-python -m http.server --bind 127.0.0.1 8000 --directory docs/_build/html
-```
-
-Open `http://127.0.0.1:8000/`. The generated site stays under `docs/_build/`, which Git ignores.
+The latest documentation is at https://justin-cechmanek.github.io/topic-boundaries-docs/.

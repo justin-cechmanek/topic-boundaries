@@ -12,9 +12,9 @@
 
 ## Index schema
 
-The bundled `topic_boundaries/schema.yml` defines an HNSW vector index with a `cluster_id` tag and cosine distance. The pipeline adjusts the vector field's dimensions to match the embedder. Pass `schema_path` to `run_pipeline` to load a different schema, including one with L2 distance.
+The bundled `topic_boundaries/schema.yml` defines an HNSW vector index with a `cluster_id` tag and cosine distance. The pipeline adjusts the vector field's dimensions to match the embedder. Pass `schema_path` to `run_pipeline` to load a different schema. Redis uses `L2` as the schema value for Euclidean distance.
 
-The distance metric affects the meaning of a score. For example, `max_distance_rankings` reads the configured metric: bounded cosine queries can search from the negated centroid, while L2 queries rank an exhaustive filtered result. For L2, it converts Redis's squared score to Euclidean distance.
+The distance metric affects the meaning of a score. For example, `max_distance_rankings` reads the configured metric: bounded cosine queries can search from the negated centroid, while Euclidean queries rank all matching cluster vectors and return Euclidean distances.
 
 ## What the methods share
 

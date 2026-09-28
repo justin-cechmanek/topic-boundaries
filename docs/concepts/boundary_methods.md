@@ -4,7 +4,7 @@
 
 Ranks each cluster's documents from farthest to nearest relative to that cluster's centroid. Use it for a straightforward list of peripheral documents.
 
-With a bounded `top_n_per_cluster` and a cosine index, the method queries nearest neighbors of the negated centroid. Cosine distance obeys `d(c, x) = 2 - d(-c, x)` for nonzero vectors. HNSW retrieval can be approximate. With L2 or another metric, or when no limit is set, the method scans all matching cluster vectors. L2 scores are returned as Euclidean distances.
+With a bounded `top_n_per_cluster` and a cosine index, the method queries nearest neighbors of the negated centroid. Cosine distance obeys `d(c, x) = 2 - d(-c, x)` for nonzero vectors. HNSW retrieval can be approximate. With Euclidean or another metric, or when no limit is set, the method scans all matching cluster vectors. Euclidean results are returned as distances.
 
 ## Cross Boundary
 

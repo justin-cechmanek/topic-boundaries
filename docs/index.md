@@ -4,6 +4,8 @@ Find documents near the edges of clusters in a text corpus or another vector spa
 
 Topic Boundaries loads data, creates embeddings or accepts vectors you already have, clusters them with K-means, and offers several ways to rank boundary documents.
 
+<!-- TODO: Justin to expand this introduction with insights and reasons to use the library. -->
+
 ## Quick Start
 
 From the repository root, install the package and start the local Redis Stack:
@@ -38,7 +40,7 @@ for hit in hits:
     print(hit.cluster_id, hit.doc_id, hit.distance)
 ```
 
-The first run may download the embedding model. See [Getting Started](user_guide/getting_started.md) for a walkthrough, or [Precomputed Vectors](examples/precomputed_vectors.md) to use vectors without a model download.
+The first run may download the embedding model. See [Getting Started](user_guide/getting_started.md) for a walkthrough, or [Data Sources](user_guide/data_sources.md) to supply your own vectors.
 
 ## Explore the Docs
 
@@ -59,13 +61,6 @@ Understand the pipeline and compare boundary methods.
 Install the project, load data, and run an analysis.
 :::
 
-:::{grid-item-card} 💡 Examples
-:link: examples/index
-:link-type: doc
-
-Start with a complete vector-only example.
-:::
-
 :::{grid-item-card} 📚 API Reference
 :link: api/index
 :link-type: doc
@@ -81,6 +76,5 @@ Find the main classes, functions, and return values.
 
 Concepts <concepts/index>
 User Guides <user_guide/index>
-Examples <examples/index>
 API <api/index>
 ```
