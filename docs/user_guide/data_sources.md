@@ -1,6 +1,6 @@
 # Data Sources
 
-A source returns `list[Datapoint]`. `run_pipeline` accepts that list directly, so you can use a built-in loader or create `Datapoint` objects yourself.
+A source returns `list[Datapoint]`. Pass that list to `embed_and_cluster_datapoints`, then pass it with the returned vectors and labels to `index_clustered_datapoints`. You can use a built-in loader or create `Datapoint` objects yourself.
 
 | Loader | Input |
 | --- | --- |
@@ -32,7 +32,7 @@ datapoints = CsvSource(
 
 ## Precomputed vectors
 
-Use `PrecomputedEmbedder` when every datapoint has a vector of the same length. The vectors may come from another embedding model or a non-text domain.
+Use `PrecomputedEmbedder` as the `embedder` argument to `embed_and_cluster_datapoints` when every datapoint has a vector of the same length. The vectors may come from another embedding model or a non-text domain.
 
 ## Text and PDF chunks
 

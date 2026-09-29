@@ -18,22 +18,32 @@ docker compose up -d
 Run a first boundary query with the included sample corpus:
 
 ```python
-from topic_boundaries import JsonlSource, Settings, max_distance_rankings, run_pipeline
+from topic_boundaries import (
+    JsonlSource,
+    Settings,
+    embed_and_cluster_datapoints,
+    index_clustered_datapoints,
+    max_distance_rankings,
+)
 
 settings = Settings.from_config()
 datapoints = JsonlSource("datasets/sample.jsonl").load()
-state = run_pipeline(
+vectors, labels, centroids = embed_and_cluster_datapoints(
     datapoints,
-    redis_url=settings.redis_url,
     n_clusters=5,
     embedding_model=settings.embedding_model,
-    schema_path=None,
+)
+index = index_clustered_datapoints(
+    datapoints,
+    vectors,
+    labels,
+    redis_url=settings.redis_url,
     overwrite_index=True,
 )
 hits = max_distance_rankings(
-    state.indexed.index,
-    state.centroids,
-    state.indexed.n_clusters,
+    index,
+    centroids,
+    n_clusters=5,
     top_n_per_cluster=3,
 )
 for hit in hits:

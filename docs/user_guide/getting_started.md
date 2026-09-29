@@ -2,24 +2,33 @@
 
 This walkthrough uses the 20 records in `datasets/sample.jsonl`. Run it from the repository root after [installing the package and starting Redis](installation.md).
 
-## Load records and run the pipeline
+## Load, cluster, and index records
 
 ```python
-from topic_boundaries import JsonlSource, Settings, run_pipeline
+from topic_boundaries import (
+    JsonlSource,
+    Settings,
+    embed_and_cluster_datapoints,
+    index_clustered_datapoints,
+)
 
 settings = Settings.from_config()
 datapoints = JsonlSource("datasets/sample.jsonl").load()
-state = run_pipeline(
+vectors, labels, centroids = embed_and_cluster_datapoints(
     datapoints,
-    redis_url=settings.redis_url,
     n_clusters=5,
     embedding_model=settings.embedding_model,
-    schema_path=None,
+)
+index = index_clustered_datapoints(
+    datapoints,
+    vectors,
+    labels,
+    redis_url=settings.redis_url,
     overwrite_index=True,
 )
 ```
 
-`state.labels[i]` is the cluster for `state.datapoints[i]`; `state.centroids` contains one vector per cluster. `overwrite_index=True` recreates the configured Redis index. Use a dedicated index name if you need to preserve an existing index.
+`labels[i]` is the cluster for `datapoints[i]`; `centroids` contains one vector per cluster. `overwrite_index=True` recreates the configured Redis index. Use a dedicated index name if you need to preserve an existing index.
 
 ## Rank boundary documents
 
@@ -27,9 +36,9 @@ state = run_pipeline(
 from topic_boundaries import max_distance_rankings
 
 hits = max_distance_rankings(
-    state.indexed.index,
-    state.centroids,
-    state.indexed.n_clusters,
+    index,
+    centroids,
+    n_clusters=5,
     top_n_per_cluster=3,
 )
 for hit in hits:
@@ -46,11 +55,11 @@ The Voronoi method uses vectors already in memory:
 from topic_boundaries import voronoi_rankings
 
 hits = voronoi_rankings(
-    state.datapoints,
-    state.vectors,
-    state.labels,
-    state.centroids,
-    state.indexed.n_clusters,
+    datapoints,
+    vectors,
+    labels,
+    centroids,
+    n_clusters=5,
     top_n_per_cluster=3,
 )
 ```
