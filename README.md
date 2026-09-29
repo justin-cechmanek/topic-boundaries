@@ -131,3 +131,16 @@ Topic centroids are useful on their own: the datapoints nearest a centroid summa
 ## Dependencies
 
 Runtime dependencies are listed in **`pyproject.toml`** (`[project] dependencies`). Use `pip install -e ".[dev]"` when developing.
+
+## Documentation
+
+The documentation is available at https://justin-cechmanek.github.io/topic-boundaries-docs/.
+To preview changes locally:
+
+```bash
+pip install -e ".[docs]"
+sphinx-build -b html -W --keep-going docs docs/_build/html
+python -m http.server --bind 127.0.0.1 8000 --directory docs/_build/html
+```
+
+Open `http://127.0.0.1:8000/` to preview it on your computer.
