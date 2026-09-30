@@ -36,6 +36,29 @@ def test_index_rejects_misaligned_labels_before_connecting():
         )
 
 
+def test_index_rejects_invalid_records_before_connecting():
+    good = [Datapoint("a"), Datapoint("b")]
+    vectors = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+    labels = np.array([0, 1])
+    cases = [
+        ([Datapoint("a"), Datapoint("a")], vectors, labels, "unique"),
+        ([Datapoint("a"), Datapoint(" ")], vectors, labels, "nonempty doc_ids"),
+        (good, np.empty((2, 0)), labels, "nonempty"),
+        (good, np.array([[np.nan, 0.0], [0.0, 1.0]]), labels, "finite"),
+        (good, vectors, np.array([0.0, 1.0]), "integer"),
+        (good, vectors, np.array([-1, 1]), "nonnegative"),
+    ]
+    for datapoints, matrix, cluster_labels, message in cases:
+        with pytest.raises(ValueError, match=message):
+            index_clustered_datapoints(
+                datapoints,
+                matrix,
+                cluster_labels,
+                redis_url="redis://localhost:6379/0",
+                overwrite_index=True,
+            )
+
+
 # --- integration: real Redis ---
 
 

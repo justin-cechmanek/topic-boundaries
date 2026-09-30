@@ -72,11 +72,25 @@ def index_clustered_datapoints(
         or not len(datapoints)
         or len(datapoints) != len(vectors)
         or len(datapoints) != len(labels)
+        or vectors.shape[1] == 0
     ):
         raise ValueError("Expected nonempty, aligned datapoints, 2-D vectors, and 1-D labels.")
+    doc_ids = [d.doc_id for d in datapoints]
+    if (
+        any(not isinstance(doc_id, str) or not doc_id.strip() for doc_id in doc_ids)
+        or len(set(doc_ids)) != len(doc_ids)
+    ):
+        raise ValueError("Expected unique, nonempty doc_ids before indexing.")
+    if not (
+        np.issubdtype(vectors.dtype, np.floating)
+        or np.issubdtype(vectors.dtype, np.integer)
+    ) or not np.isfinite(vectors).all():
+        raise ValueError("Expected finite numeric vectors before indexing.")
+    if not np.issubdtype(labels.dtype, np.integer) or (labels < 0).any():
+        raise ValueError("Expected nonnegative integer cluster labels before indexing.")
     index = open_index(schema_path, redis_url, int(vectors.shape[1]))
     records = records_for_redis(
-        [d.doc_id for d in datapoints],
+        doc_ids,
         [d.body for d in datapoints],
         vectors,
         labels,

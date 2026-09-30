@@ -182,6 +182,20 @@ def test_pdf_source_explicit_list_concatenates(tmp_path):
     assert len(dps) == 2 * len(only_a)
 
 
+def test_pdf_source_explicit_list_disambiguates_same_stem(tmp_path):
+    src = _real_pdf()
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    first.mkdir()
+    second.mkdir()
+    shutil.copy(src, first / "paper.pdf")
+    shutil.copy(src, second / "paper.pdf")
+
+    dps = PdfSource([first / "paper.pdf", second / "paper.pdf"], max_chars=500).load()
+    assert {d.doc_id.split("#")[0] for d in dps} == {"paper", "paper-2"}
+    assert len({d.doc_id for d in dps}) == len(dps)
+
+
 def test_arxiv_paper_source_metadata(monkeypatch):
     # Substitute only the network hop; feed a real parsed record through.
     record = {
