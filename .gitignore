@@ -8,6 +8,7 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+docs/_build/
 .hypothesis/
 *.log
 .DS_Store
