@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -17,6 +19,29 @@ def test_excludes_source_cluster_and_orders_nearest_first(loaded_corpus):
     assert all(h.neighbor_cluster_id != "0" for h in hits)
     # c1_nearx sits near the x-axis centroid -> nearest cross-cluster neighbor.
     assert ids[0] == "c1_nearx"
+    assert hits[0].distance == pytest.approx(0.1, abs=0.01)
+
+
+@pytest.mark.integration
+def test_l2_scores_are_euclidean_distances(make_index, tmp_path):
+    schema = Path(__file__).resolve().parents[1] / "topic_boundaries" / "schema.yml"
+    l2_schema = tmp_path / "l2.yml"
+    l2_schema.write_text(
+        schema.read_text().replace("distance_metric: cosine", "distance_metric: l2")
+    )
+    index = make_index(
+        ["own", "near", "far"],
+        ["", "", ""],
+        [[1.0, 0.0], [0.0, 0.0], [1.0, 2.0]],
+        [0, 1, 1],
+        dim=2,
+        schema_path=str(l2_schema),
+    )
+    hits = nearest_outside_cluster(index, source_cluster_id=0, centroid=[1.0, 0.0], k=2)
+    assert [(hit.neighbor_doc_id, hit.distance) for hit in hits] == [
+        ("near", pytest.approx(1.0)),
+        ("far", pytest.approx(2.0)),
+    ]
 
 
 @pytest.mark.integration

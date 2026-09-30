@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 
 from redisvl.query import VectorQuery
 from redisvl.query.filter import Tag
@@ -8,6 +9,8 @@ from redisvl.query.filter import Tag
 
 @dataclass
 class CrossBoundaryHit:
+    """A nearby other-cluster document; L2 scores are Euclidean distances."""
+
     source_cluster_id: int
     neighbor_doc_id: str
     neighbor_body: str
@@ -37,10 +40,13 @@ def nearest_outside_cluster(
         filter_expression=flt,
     )
     rows = index.query(q)
+    metric = index.schema.fields[vector_field].attrs.distance_metric.value
     hits: list[CrossBoundaryHit] = []
     for row in rows:
         dist_raw = row.get("vector_distance")
         dist = float(dist_raw) if dist_raw is not None else float("nan")
+        if metric == "L2":
+            dist = sqrt(dist)
         hits.append(
             CrossBoundaryHit(
                 source_cluster_id=source_cluster_id,
