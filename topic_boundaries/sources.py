@@ -67,7 +67,8 @@ class PdfSource:
     Datapoints from every file are concatenated; each keeps its own
     ``source_pdf`` meta (set by ``pdf_to_datapoints``). For a directory the
     doc_id prefix is the file's path relative to the directory so same-named
-    PDFs in different subdirs don't collide; a single file / list uses the stem.
+    PDFs in different subdirs don't collide; a single file / list uses the stem,
+    with numeric suffixes for repeated stems in a list.
     """
 
     def __init__(
@@ -86,7 +87,18 @@ class PdfSource:
     def _files(self) -> list[tuple[Path, str]]:
         """(file, doc_id_prefix) pairs to load, in stable order."""
         if isinstance(self.path, (list, tuple)):  # explicit list of paths
-            return [(Path(p), Path(p).stem) for p in self.path]
+            files: list[tuple[Path, str]] = []
+            used: set[str] = set()
+            for item in self.path:
+                file = Path(item)
+                prefix = file.stem
+                suffix = 2
+                while prefix in used:
+                    prefix = f"{file.stem}-{suffix}"
+                    suffix += 1
+                used.add(prefix)
+                files.append((file, prefix))
+            return files
         p = Path(self.path)
         if p.is_dir():
             return [
