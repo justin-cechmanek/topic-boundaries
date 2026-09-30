@@ -65,7 +65,13 @@ def index_clustered_datapoints(
     overwrite_index: bool,
     schema_path: str | None = None,
 ) -> SearchIndex:
-    """Create a Redis index and load datapoints with their vectors and cluster labels."""
+    """Load aligned datapoints, vectors, and labels into a RedisVL index.
+
+    Returns a connected ``SearchIndex``. ``schema_path`` selects a custom
+    schema; its ``embedding`` field dimensions are set from ``vectors``.
+    ``overwrite_index=True`` replaces the index and its stored documents.
+    Invalid IDs, vectors, or labels raise ``ValueError`` before connecting.
+    """
     if (
         vectors.ndim != 2
         or labels.ndim != 1

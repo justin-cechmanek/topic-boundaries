@@ -59,6 +59,7 @@ def boundary_doc_indices_per_cluster(
     n_clusters: int,
     **kwargs,
 ) -> dict[int, np.ndarray]:
+    """Map each cluster ID to global indices of PCA-space convex-hull points."""
     out: dict[int, np.ndarray] = {}
     for c in range(n_clusters):
         mask = labels == c

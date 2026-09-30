@@ -34,6 +34,9 @@ datapoints = CsvSource(
 
 Use `PrecomputedEmbedder` as the `embedder` argument to `embed_and_cluster_datapoints` when every datapoint has a vector of the same length. The vectors may come from another embedding model or a non-text domain.
 
+See the [Euclidean precomputed-vector example](../examples/precomputed_euclidean.md)
+for a complete clustering, schema, and indexing workflow.
+
 ## Text and PDF chunks
 
 Text, Markdown, and PDF loaders split long content into datapoints. `max_chars` and `overlap` control chunk size and context overlap. Each chunk has its source path and chunk index in `meta`. Markdown headings and fence markers are removed before chunking; code inside the fences is retained.

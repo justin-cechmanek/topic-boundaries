@@ -13,6 +13,8 @@ _VECTOR_KEYS = ("vector", "embedding")
 
 @dataclass
 class Datapoint:
+    """One identified text record or precomputed vector with optional metadata."""
+
     doc_id: str
     body: str = ""
     meta: dict[str, Any] = field(default_factory=dict)

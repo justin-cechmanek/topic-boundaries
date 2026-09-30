@@ -77,6 +77,13 @@ Install the project, load data, and run an analysis.
 Find the main classes, functions, and return values.
 :::
 
+:::{grid-item-card} 🧪 Examples
+:link: examples/index
+:link-type: doc
+
+Run text, precomputed-vector, method-comparison, and visualization examples.
+:::
+
 ::::
 
 ```{toctree}
@@ -86,4 +93,5 @@ Find the main classes, functions, and return values.
 Concepts <concepts/index>
 User Guides <user_guide/index>
 API <api/index>
+Examples <examples/index>
 ```

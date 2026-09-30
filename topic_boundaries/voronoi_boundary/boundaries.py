@@ -9,6 +9,8 @@ from topic_boundaries.documents import Datapoint
 
 @dataclass
 class VoronoiBoundaryHit:
+    """One point ranked near its K-means Voronoi decision boundary."""
+
     cluster_id: int
     doc_id: str
     body: str

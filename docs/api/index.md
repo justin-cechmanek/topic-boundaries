@@ -1,39 +1,49 @@
 # API Reference
 
-This page lists the main public entry points. Import them from `topic_boundaries` unless a module is shown.
+The [Python reference](reference.rst) renders signatures and docstrings for
+every name exported by `topic_boundaries`. [Getting Started](../user_guide/getting_started.md)
+shows how to use the main functions together.
 
-## Data and embedding
+## Data flow
 
-| Name | Purpose |
-| --- | --- |
-| `Datapoint` | One document or vector, with `doc_id`, `body`, `meta`, and `vector` fields |
-| `JsonlSource(path).load()` | Read line-delimited JSON into datapoints |
-| `CsvSource(path, id_col=..., ...).load()` | Map CSV columns into datapoints |
-| `HFTextEmbedder(model, batch_size=64)` | Embed text with the configured model |
-| `PrecomputedEmbedder()` | Pass through existing vectors |
+1. A source's `load()` returns `list[Datapoint]`. Each datapoint needs a unique
+   `doc_id` before indexing, plus text in `body` or a precomputed `vector`.
+2. `embed_and_cluster_datapoints` returns `(vectors, labels, centroids)` with
+   shapes `(n, d)`, `(n,)`, and `(n_clusters, d)`. Supply `embedding_model` for
+   text or `embedder=PrecomputedEmbedder()` for existing vectors.
+3. `index_clustered_datapoints` loads aligned datapoints, vectors, and labels
+   into Redis and returns a connected `SearchIndex`. It requires an `embedding`
+   vector field and `cluster_id` tag in the schema. `overwrite_index=True`
+   replaces the configured index and its stored documents.
+4. Pass the returned arrays or index to a boundary method.
 
-Other loaders are listed in [Data Sources](../user_guide/data_sources.md). `Embedder` is a structural protocol with an `embed(datapoints)` method and a `dims` property.
+K-means and Voronoi use Euclidean geometry regardless of the Redis metric.
+The default Redis schema uses cosine distance. A custom schema can use L2;
+the indexing function replaces its vector dimensions with the input width.
 
-## Clustering and indexing
+## Results and requirements
 
-`embed_and_cluster_datapoints(datapoints, *, n_clusters, embedding_model=None, embedder=None, ...)` returns `(vectors, labels, centroids)` without connecting to Redis.
+| Method | Redis? | Score or result |
+| --- | --- | --- |
+| `max_distance_rankings` | Yes | Cosine distance or Euclidean distance for L2; farthest first |
+| `cross_boundary_hits_for_all_clusters` | Yes | Cosine distance or Euclidean distance for L2; nearest first |
+| `boundary_doc_indices_per_cluster` | No | Global datapoint indices on a PCA-space hull |
+| `voronoi_rankings` | No | Own-centroid distance / nearest-other-centroid distance; near 1 means near the K-means boundary |
+| `nearest_to_centroid` | Yes | Raw Redis query rows and configured vector score |
 
-| Result | Value |
-| --- | --- |
-| `vectors` | Float32 matrix, one row per datapoint |
-| `labels` | Cluster label for each row |
-| `centroids` | One centroid vector per cluster |
+`max_distance_rankings` returns `BoundaryHit`, cross-boundary search returns
+`CrossBoundaryHit`, and `voronoi_rankings` returns `VoronoiBoundaryHit`.
+Bounded cosine max-distance queries use approximate HNSW retrieval. Unbounded
+rankings and L2 max-distance rankings scan each cluster. Convex hull falls back
+to two first-PC extremes for degenerate clusters; Voronoi needs at least two
+clusters. See [Boundary Methods](../concepts/boundary_methods.md) for tradeoffs.
 
-`index_clustered_datapoints(datapoints, vectors, labels, *, redis_url, overwrite_index, schema_path=None)` loads those vectors and labels into Redis and returns a connected RedisVL `SearchIndex`. Pass `schema_path` to use a different index schema.
+Indexing rejects duplicate or blank IDs, malformed vectors, and invalid
+labels with `ValueError` before Redis is contacted. `PrecomputedEmbedder`
+requires every datapoint to have a vector of the same width.
 
-## Boundary functions
+```{toctree}
+:maxdepth: 1
 
-| Function | Input and result |
-| --- | --- |
-| `max_distance_rankings(index, centroids, n_clusters, top_n_per_cluster=None)` | Farthest-first `BoundaryHit` list |
-| `cross_boundary_hits_for_all_clusters(index, centroids, n_clusters, k_per_centroid)` | Nearby other-cluster `CrossBoundaryHit` list |
-| `boundary_doc_indices_per_cluster(labels, vectors, n_clusters, **kwargs)` | Convex hull indices by cluster |
-| `voronoi_rankings(datapoints, vectors, labels, centroids, n_clusters, top_n_per_cluster=None)` | Voronoi `VoronoiBoundaryHit` list |
-| `nearest_to_centroid(index, centroid, cluster_id, vector_field="embedding", k=10)` | Redis rows nearest the cluster centroid |
-
-The hit classes preserve the score and identity relevant to each method. See [Boundary Methods](../concepts/boundary_methods.md) for score meanings and tradeoffs.
+reference
+```

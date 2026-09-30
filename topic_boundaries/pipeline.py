@@ -28,10 +28,12 @@ def embed_and_cluster_datapoints(
     kmeans_random_state: int = 42,
     kmeans_n_init: int | str = "auto",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Embed datapoints and run KMeans without touching Redis (for analysis / viz).
+    """Return ``(vectors, labels, centroids)`` without connecting to Redis.
 
-    Supply your own `embedder` (e.g. PrecomputedEmbedder) or an `embedding_model`
-    for the default text embedder.
+    Supply ``embedder`` (for example, ``PrecomputedEmbedder``) or an
+    ``embedding_model`` for text. The arrays have shapes ``(n, d)``, ``(n,)``,
+    and ``(n_clusters, d)``. Raises ``ValueError`` when neither embedder is
+    supplied and ``RuntimeError`` if K-means leaves a cluster empty.
     """
     embedder = _resolve_embedder(embedder, embedding_model, embed_batch_size)
     vectors = np.asarray(embedder.embed(datapoints), dtype=np.float32)

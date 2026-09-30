@@ -65,3 +65,5 @@ hits = voronoi_rankings(
 ```
 
 Its `voronoi_ratio` measures proximity to a K-means boundary. See [Boundary Methods](../concepts/boundary_methods.md) to compare the techniques.
+The [Examples](../examples/index.md) section also covers precomputed vectors,
+all four methods, and visualization.

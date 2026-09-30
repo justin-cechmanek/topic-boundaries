@@ -10,6 +10,8 @@ from redisvl.query.filter import Tag
 
 @dataclass
 class BoundaryHit:
+    """A document ranked farthest-first within its cluster."""
+
     cluster_id: int
     doc_id: str
     body: str
@@ -96,6 +98,12 @@ def boundary_rankings_for_all_clusters(
     n_clusters: int,
     top_n_per_cluster: int | None = None,
 ) -> list[BoundaryHit]:
+    """Return farthest-first hits for each cluster in cluster-ID order.
+
+    ``top_n_per_cluster=None`` returns every indexed document in each cluster.
+    Bounded cosine queries use approximate HNSW search; L2 scores are returned
+    as Euclidean distances.
+    """
     all_hits: list[BoundaryHit] = []
     for c in range(n_clusters):
         all_hits.extend(

@@ -111,4 +111,4 @@ Stack service. The documentation is also hosted at
 https://justin-cechmanek.github.io/topic-boundaries-docs/. Only generated docs
 are published there; the package repository remains private. Start with
 [Getting Started](docs/user_guide/getting_started.md) or the
-[API Reference](docs/api/index.md).
+[Examples](docs/examples/index.md) and [API Reference](docs/api/index.md).

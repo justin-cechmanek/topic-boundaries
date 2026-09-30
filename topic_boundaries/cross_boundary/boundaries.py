@@ -65,6 +65,11 @@ def cross_boundary_hits_for_all_clusters(
     n_clusters: int,
     k_per_centroid: int,
 ) -> list[CrossBoundaryHit]:
+    """Return nearest other-cluster hits for every centroid.
+
+    ``k_per_centroid`` limits each cluster's Redis vector query. L2 scores are
+    returned as Euclidean distances.
+    """
     all_hits: list[CrossBoundaryHit] = []
     for c in range(n_clusters):
         centroid = centroids[c]
