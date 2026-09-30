@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 from redisvl.index import SearchIndex
 
-
-@dataclass
-class IndexedCorpus:
-    index: SearchIndex
-    vector_dim: int
-    n_clusters: int
+from topic_boundaries.documents import Datapoint
 
 
 def open_index(schema_path_str: str | None, redis_url: str, vector_dim: int) -> SearchIndex:
@@ -60,3 +54,32 @@ def create_and_load(
 ) -> None:
     index.create(overwrite=overwrite, drop=drop_keys)
     index.load(records, id_field=id_field, batch_size=batch_size)
+
+
+def index_clustered_datapoints(
+    datapoints: list[Datapoint],
+    vectors: np.ndarray,
+    labels: np.ndarray,
+    *,
+    redis_url: str,
+    overwrite_index: bool,
+    schema_path: str | None = None,
+) -> SearchIndex:
+    """Create a Redis index and load datapoints with their vectors and cluster labels."""
+    if (
+        vectors.ndim != 2
+        or labels.ndim != 1
+        or not len(datapoints)
+        or len(datapoints) != len(vectors)
+        or len(datapoints) != len(labels)
+    ):
+        raise ValueError("Expected nonempty, aligned datapoints, 2-D vectors, and 1-D labels.")
+    index = open_index(schema_path, redis_url, int(vectors.shape[1]))
+    records = records_for_redis(
+        [d.doc_id for d in datapoints],
+        [d.body for d in datapoints],
+        vectors,
+        labels,
+    )
+    create_and_load(index, records, overwrite=overwrite_index, drop_keys=overwrite_index)
+    return index

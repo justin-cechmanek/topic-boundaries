@@ -14,20 +14,17 @@ This page lists the main public entry points. Import them from `topic_boundaries
 
 Other loaders are listed in [Data Sources](../user_guide/data_sources.md). `Embedder` is a structural protocol with an `embed(datapoints)` method and a `dims` property.
 
-## Pipeline
+## Clustering and indexing
 
-`run_pipeline(datapoints, *, redis_url, n_clusters, embedding_model=None, embedder=None, schema_path, overwrite_index, ...)` embeds or passes through vectors, runs K-means, loads the Redis index, and returns a `PipelineState`.
+`embed_and_cluster_datapoints(datapoints, *, n_clusters, embedding_model=None, embedder=None, ...)` returns `(vectors, labels, centroids)` without connecting to Redis.
 
-| `PipelineState` field | Value |
+| Result | Value |
 | --- | --- |
-| `datapoints` | Input list |
 | `vectors` | Float32 matrix, one row per datapoint |
 | `labels` | Cluster label for each row |
 | `centroids` | One centroid vector per cluster |
-| `indexed.index` | Connected RedisVL `SearchIndex` |
-| `indexed.vector_dim`, `indexed.n_clusters` | Index dimensions and cluster count |
 
-`embed_and_cluster_datapoints(...)` returns `(vectors, labels, centroids, vector_dim)` without connecting to Redis.
+`index_clustered_datapoints(datapoints, vectors, labels, *, redis_url, overwrite_index, schema_path=None)` loads those vectors and labels into Redis and returns a connected RedisVL `SearchIndex`. Pass `schema_path` to use a different index schema.
 
 ## Boundary functions
 

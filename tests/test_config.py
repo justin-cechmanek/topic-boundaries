@@ -94,6 +94,5 @@ def test_scattered_defaults_reference_the_central_constants():
         (sources.TextDirSource.__init__, "overlap", cfg.DEFAULT_CHUNK_OVERLAP),
         (embedding.HFTextEmbedder.__init__, "batch_size", cfg.DEFAULT_EMBED_BATCH_SIZE),
         (pipeline.embed_and_cluster_datapoints, "embed_batch_size", cfg.DEFAULT_EMBED_BATCH_SIZE),
-        (pipeline.run_pipeline, "embed_batch_size", cfg.DEFAULT_EMBED_BATCH_SIZE),
     ]:
         assert _default(func, param) == expected, f"{func.__qualname__}({param})"

@@ -3,7 +3,7 @@
 Embed (or bring your own vectors) -> KMeans -> Redis vector index -> boundary
 methods. Public API:
 
-    from topic_boundaries import Datapoint, CsvSource, PrecomputedEmbedder, run_pipeline
+    from topic_boundaries import Datapoint, CsvSource, embed_and_cluster_datapoints
 """
 
 from __future__ import annotations
@@ -11,11 +11,8 @@ from __future__ import annotations
 from topic_boundaries.config import Settings
 from topic_boundaries.documents import Datapoint, datapoint_from_record, load_jsonl
 from topic_boundaries.embedding import Embedder, HFTextEmbedder, PrecomputedEmbedder
-from topic_boundaries.pipeline import (
-    PipelineState,
-    embed_and_cluster_datapoints,
-    run_pipeline,
-)
+from topic_boundaries.indexing import index_clustered_datapoints
+from topic_boundaries.pipeline import embed_and_cluster_datapoints
 from topic_boundaries.sources import (
     ArxivPaperSource,
     ArxivSource,
@@ -53,9 +50,8 @@ __all__ = [
     "Embedder",
     "HFTextEmbedder",
     "PrecomputedEmbedder",
-    "PipelineState",
-    "run_pipeline",
     "embed_and_cluster_datapoints",
+    "index_clustered_datapoints",
     "JsonlSource",
     "PdfSource",
     "ArxivSource",
