@@ -7,13 +7,9 @@ public docs repository after matching code changes merge.
 
 EVALUATION (before claiming boundary ranks surface useful ideas)
 ---------------------------------------------------------------
-[ ] E1 Add one reproducible experiment on controlled 2D clusters with bridges,
-    outliers, and elongated shapes. Record method rankings, overlap, and
-    failure cases; geometric checks are not a novelty metric.
-[ ] E2 Export 40 blinded candidates from datasets/arxiv/ml_ai_100.jsonl:
-    eight each from max-distance, convex hull, Voronoi, cross-boundary, and a
-    random baseline. Supply cluster context and a 0-2 rubric for boundary
-    relevance and potential cross-topic value. One human reviewer rates them;
+[ ] E2 One human reviewer rates the 40 blinded candidates in
+    evaluation/round1/review_sheet.csv using the rubric in evaluation/README.md.
+    Run `python evaluation/evaluate.py report`, inspect individual notes, and
     report descriptive results and limits without significance claims.
 
 LATER, ONLY IF EVALUATION OR A BENCHMARK JUSTIFIES IT
