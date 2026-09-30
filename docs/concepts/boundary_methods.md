@@ -8,7 +8,7 @@ With a bounded `top_n_per_cluster` and a cosine index, the method queries neares
 
 ## Cross Boundary
 
-For each centroid, finds nearby documents tagged as belonging to *other* clusters. Use it to inspect relationships between topics. A hit identifies its source cluster and the neighboring document's cluster. The returned score is Redis's vector score for the configured index metric.
+For each centroid, finds nearby documents tagged as belonging to *other* clusters. Use it to inspect relationships between topics. A hit identifies its source cluster and the neighboring document's cluster. `distance` is cosine distance for a cosine index and Euclidean distance for an L2 index; other configured metrics retain their Redis score.
 
 ## Convex Hull
 
