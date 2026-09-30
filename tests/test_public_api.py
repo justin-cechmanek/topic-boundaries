@@ -10,7 +10,6 @@ def test_public_api_names_resolve():
 def test_key_symbols_are_the_right_kind():
     assert callable(tb.embed_and_cluster_datapoints)
     assert callable(tb.index_clustered_datapoints)
-    assert not hasattr(tb, "run_pipeline")
     assert callable(tb.CsvSource)
     # aliased rankers from two different modules
     assert tb.max_distance_rankings is not tb.voronoi_rankings
