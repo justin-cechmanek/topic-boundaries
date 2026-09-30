@@ -1,146 +1,114 @@
 # Topic Boundaries
 
-This project allows you to identify the specific content at the edges of topics within a large corpus of text.
+Topic Boundaries finds documents at the edges of clusters in a text corpus or
+another vector space. It can surface unusual documents and possible links
+between topics for a person to investigate. A geometric boundary is a candidate
+for inspection, not proof that an idea is novel or useful. The project is an
+exploratory library built around the questions in the
+[original proposal](knowledge_boundaries_paper_proposal.pdf).
 
-## What is a topic boundary?
-
-A **topic boundary** is the set of datapoints (ideas, statements, concepts) that exist at the periphery of our understanding of a specific field of knowledge. It is the edge—or boundary—of our knowledge of a subject. This is generally where new research and innovation is focused. If we consider a specific field of knowledge we can assume the centroid of that field is well explored, so it follows that the remaining interesting areas of future discovery and innovation exist further away. This repository is a collection of tools and methods that attempts to formally quantify and identify these boundaries using multiple different techniques.
+The library loads documents or existing vectors, clusters them with K-means,
+and offers four boundary methods. Some methods use a Redis vector index; others
+work directly on the vectors in memory.
 
 ## Quickstart
 
-1. **Python 3.10+** and a virtualenv (see `.python-version` if you use pyenv).
-
-2. **Install** (dependencies are defined in `pyproject.toml`; editable install is recommended):
-
-   ```bash
-   pip install -e ".[dev]"
-   ```
-
-   Optional PDF ingestion: `pip install -e ".[corpus]"` (installs `pypdf`).
-
-3. **Redis Stack** (RediSearch + vector indexing), e.g.:
-
-   ```bash
-   docker compose up -d
-   ```
-
-4. **Review or edit defaults** in `config.yml`:
-
-   - `redis_url`
-   - `embedding_model`
-   - `kmeans.random_state`
-   - `kmeans.n_init`
-
-5. **Use it from Python.** Load a source, embed and cluster its datapoints, index them, then apply a boundary method:
-
-   ```python
-   from topic_boundaries import (
-       JsonlSource,
-       Settings,
-       embed_and_cluster_datapoints,
-       index_clustered_datapoints,
-       max_distance_rankings,
-   )
-
-   settings = Settings.from_config()
-   datapoints = JsonlSource("datasets/sample.jsonl").load()
-   vectors, labels, centroids = embed_and_cluster_datapoints(
-       datapoints,
-       n_clusters=5,
-       embedding_model=settings.embedding_model,
-   )
-   index = index_clustered_datapoints(
-       datapoints,
-       vectors,
-       labels,
-       redis_url=settings.redis_url,
-       overwrite_index=True,
-   )
-   hits = max_distance_rankings(index, centroids, n_clusters=5)
-   ```
-
-   `Settings.from_config()` reads defaults (Redis URL, embedding model, KMeans
-   params) from `config.yml`.
-
-The package installs and imports as **`topic_boundaries`** (e.g. `from topic_boundaries import Datapoint, CsvSource, embed_and_cluster_datapoints`).
-
-## Data sources
-
-A **data source** is anything with a `load()` method that returns a
-`list[Datapoint]` for the pipeline. A `Datapoint` needs a
-`doc_id` and either a `body` (to embed) or a precomputed `vector`. Built-ins in
-`topic_boundaries.sources`:
-
-| Source | Loads |
-| --- | --- |
-| `JsonlSource(path)` | Line-delimited JSON (arXiv/`collect_datasets` schema or generic) |
-| `JsonSource(path, id_col=..., body_col=..., meta_cols=..., vector_col=...)` | A JSON file holding an array of objects |
-| `RecordsSource(records, id_col=..., ...)` | Any in-memory iterable of dicts (same mapping as CSV/JSON) |
-| `CsvSource(path, id_col=..., ...)` | CSV rows (stdlib `csv`, no pandas) |
-| `PdfSource(path_or_dir_or_list)` | One PDF, a directory (`**/*.pdf`), or an explicit list |
-| `TextDirSource(dir)` / `TextFileSource(file)` | `.txt`/`.md` (Markdown headings/code fences normalized) |
-| `ArxivSource(query)` / `ArxivPaperSource(id_or_url, fetch_pdf=...)` | arXiv search, or one paper by id/URL (abstract or full PDF) |
-
-The `id_col`/`body_col`/`meta_cols`/`vector_col` mapping is shared by
-`CsvSource`, `JsonSource`, and `RecordsSource`: `id_col` → `doc_id`, `body_col`
-→ embedded text, `meta_cols` → passed-through metadata, `vector_col` →
-precomputed vector (a JSON array or comma/space-separated string).
-
-## Testing
+Run these commands from a checkout with Python 3.10 or newer and Docker:
 
 ```bash
-pip install -e ".[dev,corpus]"
-docker compose up -d          # Redis Stack, for the integration tests
-pytest                         # or: pytest --cov=topic_boundaries --cov-report=term-missing
+pip install -e ".[dev]"
+docker compose up -d
 ```
 
-Tests use no mocks — they exercise real code paths. The `integration`-marked
-tests run against a live Redis Stack (and the embedding pipeline uses the real
-model); they **skip automatically** when Redis is unreachable, so `pytest` still
-passes without it. Override the Redis target with `REDIS_URL=...`.
+The sample corpus has 20 records. This example embeds them, forms five clusters,
+indexes them, and prints the three farthest documents in each cluster:
 
-## The process
+```python
+from topic_boundaries import (
+    JsonlSource,
+    Settings,
+    embed_and_cluster_datapoints,
+    index_clustered_datapoints,
+    max_distance_rankings,
+)
 
-Each technique lives under its own subdirectory inside **`topic_boundaries`**. They share these steps:
+settings = Settings.from_config()
+datapoints = JsonlSource("datasets/sample.jsonl").load()
+vectors, labels, centroids = embed_and_cluster_datapoints(
+    datapoints,
+    n_clusters=5,
+    embedding_model=settings.embedding_model,
+    kmeans_random_state=settings.kmeans_random_state,
+    kmeans_n_init=settings.kmeans_n_init,
+)
+index = index_clustered_datapoints(
+    datapoints,
+    vectors,
+    labels,
+    redis_url=settings.redis_url,
+    schema_path=str(settings.schema_path),
+    overwrite_index=True,
+)
+for hit in max_distance_rankings(index, centroids, n_clusters=5, top_n_per_cluster=3):
+    print(hit.cluster_id, hit.doc_id, hit.distance)
+```
 
-1. Choose a dataset to analyse.
-2. Load the raw text and parse it into datapoints.
-3. Embed the datapoints with your chosen model and load vectors into a RedisVL vector search index.
-4. Run K-means clustering to form topic clusters.
-5. Tag each datapoint with its cluster id in the index.
-6. Compute cluster centroids (mean of vectors per cluster, assuming roughly spherical clusters).
+The first run may download the embedding model. `overwrite_index=True` replaces
+the configured Redis index **and its existing documents**; use a dedicated index
+name in a custom schema when keeping existing data matters.
 
-## Specific techniques
+`Settings.from_config()` reads `config.yml` in a source checkout, with
+`REDIS_URL` and `EMBEDDING_MODEL` environment variables taking precedence. The
+example passes its K-means and schema settings explicitly. To use vectors you
+already have, pass `embedder=PrecomputedEmbedder()` instead of
+`embedding_model=...`; see [Data Sources](docs/user_guide/data_sources.md).
 
-### 1. Maximum distance sorting
+## Choose a method
 
-For each cluster, rank documents by greatest distance to the centroid (farthest-first boundary listing).
+| Method | Question it asks | Needs Redis? |
+| --- | --- | --- |
+| `max_distance_rankings` | Which documents are farthest from their own centroid? | Yes |
+| `boundary_doc_indices_per_cluster` | Which documents form a convex hull after PCA compression? | No |
+| `voronoi_rankings` | Which documents sit near a K-means decision boundary? | No |
+| `cross_boundary_hits_for_all_clusters` | Which other-cluster documents are nearest to a centroid? | Yes |
 
-### 2. Convex hull
+`nearest_to_centroid` instead finds representative documents near a topic's
+core. The methods answer different questions; their scores are not one common
+measure of boundary quality. See [Boundary Methods](docs/concepts/boundary_methods.md)
+for their definitions and limits.
 
-Use [convex hull algorithms](https://en.wikipedia.org/wiki/Convex_hull_algorithms), specifically [Quickhull](https://en.wikipedia.org/wiki/Quickhull), on a PCA-compressed representation of each cluster to approximate hull vertices (see `topic_boundaries/convex_hull/`).
+## Data sources and distance metrics
 
-### 3. Cross boundary
+A source returns `list[Datapoint]`. Each datapoint has a `doc_id` and text in
+`body` or a precomputed `vector`. Built-in sources cover JSONL, JSON arrays,
+CSV, in-memory records, text and Markdown files, PDFs, and arXiv papers.
+PDF ingestion needs `pip install -e ".[corpus]"`; visualization needs
+`pip install -e ".[viz]"`. See [Data Sources](docs/user_guide/data_sources.md)
+for loader options and the precomputed-vector path.
 
-Using one cluster’s centroid, find the nearest datapoints that are **not** in that cluster—neighbors on other clusters’ boundaries. Repeat per centroid.
+K-means and the Voronoi method use Euclidean geometry. The default Redis schema
+uses cosine distance, and `HFTextEmbedder` normalizes its text vectors.
+`PrecomputedEmbedder` preserves supplied vectors. A custom Redis schema can
+use Euclidean distance. Choose a metric that fits the vectors and read the
+[metric notes](docs/concepts/architecture.md#index-schema) before comparing
+scores across methods.
 
-## Centroid analysis
+All datapoints and vectors are held in memory while clustering. Full rankings,
+and Euclidean farthest rankings, scan a cluster's indexed vectors. This is not
+yet a streaming or proven large-corpus workflow.
 
-Topic centroids are useful on their own: the datapoints nearest a centroid summarize the core of each topic. You can pass those texts to an LLM to name or summarize clusters (`centroid_neighbors` method).
-
-## Dependencies
-
-Runtime dependencies are listed in **`pyproject.toml`** (`[project] dependencies`). Use `pip install -e ".[dev]"` when developing.
-
-## Documentation
-
-The documentation is available at https://justin-cechmanek.github.io/topic-boundaries-docs/.
-To preview changes locally:
+## Tests and documentation
 
 ```bash
-pip install -e ".[docs]"
+pip install -e ".[dev,corpus,viz,docs]"
+docker compose up -d
+pytest -q
 sphinx-build -b html -W --keep-going docs docs/_build/html
-python -m http.server --bind 127.0.0.1 8000 --directory docs/_build/html
 ```
 
-Open `http://127.0.0.1:8000/` to preview it on your computer.
+Redis integration tests skip when Redis is unavailable; CI supplies a Redis
+Stack service. The documentation is also hosted at
+https://justin-cechmanek.github.io/topic-boundaries-docs/. Only generated docs
+are published there; the package repository remains private. Start with
+[Getting Started](docs/user_guide/getting_started.md) or the
+[API Reference](docs/api/index.md).
