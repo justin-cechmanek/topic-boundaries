@@ -6,15 +6,13 @@ from topic_boundaries.pdf_corpus import chunk_text, normalize_whitespace
 
 
 def test_normalize_whitespace_collapses_line_noise():
-    assert normalize_whitespace("  a  \n\n  b\tc ") == "a\nb c"
+    assert normalize_whitespace("  a  \n\n  b\tc ") == "a\n\nb c"
 
 
 def test_chunk_respects_paragraph_boundaries():
     text = "para one.\n\npara two is here.\n\npara three."
     chunks = chunk_text(text, max_chars=30, overlap=0)
-    assert len(chunks) >= 2
-    joined = "\n".join(chunks)
-    assert "para one" in joined
+    assert chunks == ["para one.\n\npara two is here.", "para three."]
 
 
 def test_oversized_paragraph_hard_split_with_overlap():
@@ -26,6 +24,20 @@ def test_oversized_paragraph_hard_split_with_overlap():
     assert chunks[0][-15:] in chunks[1]
     # no duplicate tail crawl: char count roughly tracks input + overlap, not 5x.
     assert sum(len(c) for c in chunks) < 2 * len(para)
+
+
+def test_overlap_applies_between_paragraph_chunks():
+    text = "alpha beta gamma.\n\ndelta epsilon zeta.\n\neta theta iota."
+    chunks = chunk_text(text, max_chars=35, overlap=6)
+    assert len(chunks) > 1
+    assert all(len(c) <= 35 for c in chunks)
+    assert chunks[0][-6:] in chunks[1]
+
+
+@pytest.mark.parametrize("max_chars, overlap", [(0, 0), (10, -1), (10, 10)])
+def test_chunk_rejects_invalid_limits(max_chars: int, overlap: int):
+    with pytest.raises(ValueError, match="max_chars"):
+        chunk_text("some text", max_chars=max_chars, overlap=overlap)
 
 
 @pytest.mark.parametrize(

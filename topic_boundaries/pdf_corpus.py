@@ -37,7 +37,7 @@ _WS = re.compile(r"[ \t\r\f\v]+")
 
 def normalize_whitespace(text: str) -> str:
     lines = [_WS.sub(" ", ln).strip() for ln in text.splitlines()]
-    return "\n".join(ln for ln in lines if ln)
+    return "\n".join(lines).strip()
 
 
 def chunk_text(
@@ -46,34 +46,27 @@ def chunk_text(
     max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
     overlap: int = DEFAULT_CHUNK_OVERLAP,
 ) -> list[str]:
-    """Greedy chunking on paragraphs with optional overlap between chunks."""
+    """Prefer paragraph boundaries and overlap successive character windows."""
+    if max_chars <= 0 or not 0 <= overlap < max_chars:
+        raise ValueError("Require max_chars > 0 and 0 <= overlap < max_chars.")
     text = normalize_whitespace(text)
-    paras = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
     chunks: list[str] = []
-    buf = ""
-    for p in paras:
-        candidate = p if not buf else f"{buf}\n\n{p}"
-        if len(candidate) <= max_chars:
-            buf = candidate
-            continue
-        if buf:
-            chunks.append(buf)
-        if len(p) <= max_chars:
-            buf = p
-            continue
-        # oversized paragraph: hard-split
-        start = 0
-        while start < len(p):
-            end = min(start + max_chars, len(p))
-            piece = p[start:end].strip()
-            if piece:
-                chunks.append(piece)
-            if end >= len(p):
-                break  # reached the end; overlap step would emit duplicate tails
-            start = max(end - overlap, start + 1)
-        buf = ""
-    if buf:
-        chunks.append(buf)
+    start = 0
+    while start < len(text):
+        end = min(start + max_chars, len(text))
+        if end < len(text):
+            boundary = text.rfind("\n\n", start + overlap + 1, end)
+            if boundary >= 0:
+                end = boundary + 2
+        piece = text[start:end].strip()
+        if piece:
+            chunks.append(piece)
+        if end == len(text):
+            break
+        overlap_end = end
+        while overlap_end > start and text[overlap_end - 1].isspace():
+            overlap_end -= 1
+        start = max(start + 1, overlap_end - overlap) if overlap else end
     return chunks
 
 
