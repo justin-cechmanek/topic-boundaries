@@ -1,10 +1,13 @@
 # Topic Boundaries
 
-Topic Boundaries finds documents at the edges of clusters in a text corpus or
-another vector space. It can surface unusual documents and possible links
-between topics for a person to investigate. A geometric boundary is a candidate
-for inspection, not proof that an idea is novel or useful. The project is an
-exploratory library built around the questions in the
+This project allows you to identify the specific content at the edges of topics within a large corpus of text.
+
+## What is a topic boundary?
+
+A **topic boundary** is the set of datapoints (ideas, statements, concepts) that exist at the periphery of our understanding of a specific field of knowledge. It is the edge—or boundary—of our knowledge of a subject. This is generally where new research and innovation is focused. If we consider a specific field of knowledge we can assume the centroid of that field is well explored, so it follows that the remaining interesting areas of future discovery and innovation exist further away. This repository is a collection of tools and methods that attempts to formally quantify and identify these boundaries using multiple different techniques.
+
+This is the project's research hypothesis. A geometric boundary alone does not
+establish that an idea is novel or useful; see the
 [original proposal](knowledge_boundaries_paper_proposal.pdf).
 
 The library loads documents or existing vectors, clusters them with K-means,
