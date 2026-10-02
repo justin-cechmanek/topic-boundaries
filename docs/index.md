@@ -1,9 +1,10 @@
 # Topic Boundaries
+# TODO: Justin to expand on this description with insights and reasons to use this library.
 Find documents near the edges of clusters in a text corpus or another vector space.
 
 Topic Boundaries loads data, creates embeddings or accepts vectors you already have, clusters them with K-means, and offers several ways to rank boundary documents.
 
-Boundary documents are candidates for investigation; a geometric edge alone does not establish that an idea is novel or useful.
+<!-- TODO: Justin to expand this introduction with insights and reasons to use the library. -->
 
 ## Quick Start
 
