@@ -17,6 +17,6 @@ git -C docs/_build/public-pages status --short
 
 Review that the changed paths are generated HTML, `_sources` snippets,
 Sphinx assets, or the search index. Do not copy Python package files,
-datasets, `TODO.txt`, or the proposal PDF. Then commit and push from
+datasets, development guidance, or the proposal PDF. Then commit and push from
 `docs/_build/public-pages`; verify the GitHub Pages build completed. The
 `docs/_build` staging directories are ignored by the private repository.
