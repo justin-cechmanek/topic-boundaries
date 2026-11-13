@@ -70,7 +70,7 @@ def index_clustered_datapoints(
     Returns a connected ``SearchIndex``. ``schema_path`` selects a custom
     schema; its ``embedding`` field dimensions are set from ``vectors``.
     ``overwrite_index=True`` replaces the index and its stored documents.
-    Invalid IDs, vectors, or labels raise ``ValueError`` before connecting.
+    Invalid IDs, bodies, vectors, or labels raise ``ValueError`` before connecting.
     """
     if (
         vectors.ndim != 2
@@ -94,6 +94,8 @@ def index_clustered_datapoints(
         raise ValueError("Expected finite numeric vectors before indexing.")
     if not np.issubdtype(labels.dtype, np.integer) or (labels < 0).any():
         raise ValueError("Expected nonnegative integer cluster labels before indexing.")
+    if any(not isinstance(d.body, str) for d in datapoints):
+        raise ValueError("Expected string document bodies before indexing.")
     index = open_index(schema_path, redis_url, int(vectors.shape[1]))
     records = records_for_redis(
         doc_ids,
