@@ -138,4 +138,3 @@ meaningful tests. Validate changed standalone scripts directly and record result
 Evaluation results must distinguish geometric behavior from human judgments of
 usefulness.
 
-Adapted from the [Redis Decision Loop contributing guide](https://github.com/redis-field-engineering/redis-decision-loop/blob/main/CONTRIBUTING.md).
