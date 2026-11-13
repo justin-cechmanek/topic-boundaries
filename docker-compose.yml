@@ -6,7 +6,7 @@ services:
   redis:
     image: redis/redis-stack-server:7.4.0-v6
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - topic-boundaries-redis:/data
 
