@@ -52,6 +52,20 @@ def create_and_load(
     id_field: str = "doc_id",
     batch_size: int = 100,
 ) -> None:
+    """Load records only when an existing index has compatible storage and vectors."""
+    if not overwrite and index.exists():
+        existing = SearchIndex.from_existing(index.name, redis_client=index.client)
+        requested_vector = index.schema.fields["embedding"].attrs
+        stored_vector = existing.schema.fields["embedding"].attrs
+        if (
+            any(
+                getattr(requested_vector, attr) != getattr(stored_vector, attr)
+                for attr in ("dims", "datatype", "distance_metric")
+            )
+            or index.schema.index.prefix != existing.schema.index.prefix
+            or index.schema.index.storage_type != existing.schema.index.storage_type
+        ):
+            raise ValueError("Existing index schema does not match the requested schema.")
     index.create(overwrite=overwrite, drop=drop_keys)
     index.load(records, id_field=id_field, batch_size=batch_size)
 
