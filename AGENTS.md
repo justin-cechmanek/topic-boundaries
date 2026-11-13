@@ -18,4 +18,3 @@ writing guidance for both humans and agents.
   the repository.
 - Start GitHub PR comments written by Codex with `Written by Codex (AI)`.
 
-Adapted from the [Redis Decision Loop agent instructions](https://github.com/redis-field-engineering/redis-decision-loop/blob/main/AGENTS.md).
