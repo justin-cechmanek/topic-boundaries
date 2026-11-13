@@ -17,10 +17,7 @@ def open_index(schema_path_str: str | None, redis_url: str, vector_dim: int) -> 
     if schema_path_str:
         schema_path = Path(schema_path_str)
     schema = load_schema_for_dims(schema_path, vector_dim)
-    idx = SearchIndex(schema, redis_url=redis_url)
-    # connect() does not use the constructor's redis_url unless passed explicitly
-    idx.connect(redis_url=redis_url)
-    return idx
+    return SearchIndex(schema, redis_url=redis_url)
 
 
 def records_for_redis(
