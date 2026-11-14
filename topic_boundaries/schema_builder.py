@@ -7,7 +7,7 @@ from redisvl.schema import IndexSchema
 
 
 def load_schema_for_dims(schema_path: Path, vector_dims: int) -> IndexSchema:
-    """Load schema.yml and override vector dimensions to match the embedder."""
+    """Load a FLOAT32 schema and override vector dimensions to match the embedder."""
     with schema_path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     for field in raw["fields"]:
@@ -16,4 +16,7 @@ def load_schema_for_dims(schema_path: Path, vector_dims: int) -> IndexSchema:
             break
     else:
         raise ValueError("schema.yml must define an 'embedding' vector field")
-    return IndexSchema.from_dict(raw)
+    schema = IndexSchema.from_dict(raw)
+    if schema.fields["embedding"].attrs.datatype.value != "FLOAT32":
+        raise ValueError("The 'embedding' vector field must use FLOAT32 storage.")
+    return schema
