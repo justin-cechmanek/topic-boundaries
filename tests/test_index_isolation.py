@@ -6,7 +6,7 @@ from topic_boundaries.indexing import create_and_load, open_index, records_for_r
 
 
 @pytest.mark.integration
-def test_test_indexes_preserve_existing_schema_and_each_other(make_index, isolated_schema, redis_url):
+def test_that_test_indexes_preserve_existing_schema_and_each_other(make_index, isolated_schema, redis_url):
     parent_schema = isolated_schema()
     parent = open_index(str(parent_schema), redis_url, 2)
     records = records_for_redis(["a"], ["keep"], np.array([[1.0, 0.0]]), np.array([0]))
