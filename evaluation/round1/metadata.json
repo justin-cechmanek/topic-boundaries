@@ -1,0 +1,8 @@
+{
+  "dataset": "datasets/arxiv/ml_ai_100.jsonl",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "n_clusters": 5,
+  "random_state": 42,
+  "selection_seed": 42,
+  "items_per_method": 8
+}
