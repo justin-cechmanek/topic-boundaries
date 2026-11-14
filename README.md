@@ -115,3 +115,12 @@ https://justin-cechmanek.github.io/topic-boundaries-docs/. Only generated docs
 are published there; the package repository remains private. Start with
 [Getting Started](docs/user_guide/getting_started.md) or the
 [Examples](docs/examples/index.md) and [API Reference](docs/api/index.md).
+
+## Contributing and task tracking
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and
+verification requirements. Track task scope, acceptance criteria, research, and
+progress in [GitHub Issues](https://github.com/justin-cechmanek/topic-boundaries/issues).
+The private [Topic Boundaries Project](https://github.com/users/justin-cechmanek/projects/1)
+holds delivery order and status. Keep plans and handoffs there instead of a
+local TODO file.
