@@ -52,8 +52,7 @@ The 2D projection helps inspect clusters, but the boundary method ranks in
 the original vector space. A projected overlap does not prove a high-dimensional
 boundary. See [Boundary Methods](../concepts/boundary_methods.md) for the scores.
 
-This saved illustration uses the same points, axis ranges, and proportions as
-the method diagrams. Its larger, outlined points are the highest Voronoi-ratio
+This illustration's larger outlined points are the highest Voronoi-ratio
 candidates selected by `voronoi_rankings` in each cluster:
 
 ![Library plot of two clusters, their centroids, and two highlighted Voronoi boundary candidates.](../_static/figures/library-plot.png)
