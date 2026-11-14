@@ -32,7 +32,7 @@ def _needs_redis(redis_url):
 
 
 @pytest.mark.integration
-def test_embed_cluster_and_index_end_to_end(_needs_redis, redis_url):
+def test_embed_cluster_and_index_end_to_end(_needs_redis, redis_url, isolated_schema):
     dps = load_jsonl(ROOT / "datasets" / "sample.jsonl")
     n_clusters = 2
     vectors, labels, centroids = embed_and_cluster_datapoints(
@@ -46,6 +46,7 @@ def test_embed_cluster_and_index_end_to_end(_needs_redis, redis_url):
         labels,
         redis_url=redis_url,
         overwrite_index=True,
+        schema_path=str(isolated_schema()),
     )
     assert vectors.shape == (len(dps), 384)
     assert labels.shape == (len(dps),)
