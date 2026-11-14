@@ -123,6 +123,8 @@ class PdfSource:
 
 
 class ArxivSource:
+    """Search arXiv and load up to ``max_results`` abstract records."""
+
     def __init__(self, query: str, *, max_results: int = 100):
         self.query = query
         self.max_results = max_results

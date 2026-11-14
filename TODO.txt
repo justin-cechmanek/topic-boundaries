@@ -1,39 +1,12 @@
 TODO
 ====
 
-Open, PR-sized work only. Work from top to bottom within a section. Keep the
-code repository private; publish only generated documentation to the separate
-public docs repository. Completed work lives in Git history, not this file.
+Open, PR-sized work only. Completed work lives in Git history. Keep the code
+repository private and publish only generated HTML/assets to the separate
+public docs repository after matching code changes merge.
 
-CORRECTNESS (before documenting the behavior as stable)
---------------------------------------------------------
-[ ] C1 Fix text/PDF chunking: retain paragraph breaks, apply overlap at every
-    chunk boundary, and reject invalid max_chars/overlap. Test paragraphs,
-    oversized text, and loader output.
-[ ] C2 Reject duplicate/empty doc_ids and malformed vectors before Redis index
-    creation can overwrite data. Cover aligned shape, finite values, and
-    explicit PDF lists with duplicate stems in tests.
-[ ] C3 Make CrossBoundaryHit.distance a Euclidean distance for L2 indexes, as
-    max_distance_rankings already does. Document cosine/L2 score semantics and
-    test both schemas against Redis Stack.
-
-DOCUMENTATION
--------------
-[ ] D1 Expand the Sphinx API reference from the public exports with built-in
-    autodoc and useful docstrings: signatures, defaults, results, errors,
-    metric semantics, and which functions require Redis.
-[ ] D2 Add runnable examples for the sample text corpus, precomputed vectors
-    with a Euclidean schema, all four boundary methods, and visualization.
-    Run the snippets in CI or an equivalent reproducible check.
-[ ] D3 Add original labeled 2D diagrams for farthest, convex hull, Voronoi,
-    and cross-boundary methods, plus a plot produced by the library. Include
-    alt text. Do not republish the copyrighted proposal slides.
-[ ] D4 Run a strict Sphinx build in CI and document the generated-HTML-only
-    sync to the public docs repository. Keep the private package and datasets
-    out of the published site.
-
-EVALUATION (before claiming that boundary ranks surface useful ideas)
----------------------------------------------------------------------
+EVALUATION (before claiming boundary ranks surface useful ideas)
+---------------------------------------------------------------
 [ ] E1 Add one reproducible experiment on controlled 2D clusters with bridges,
     outliers, and elongated shapes. Record method rankings, overlap, and
     failure cases; geometric checks are not a novelty metric.
@@ -52,9 +25,3 @@ LATER, ONLY IF EVALUATION OR A BENCHMARK JUSTIFIES IT
     evaluation. Silhouette measures cluster separation, not boundary quality.
 [ ] L3 Add another clustering algorithm or a broader parameter sweep only if
     the evaluated failure cases identify a need that K-means cannot meet.
-
-MAINTENANCE
------------
-[ ] M1 Fix .python-version (currently not a Python version), pin CI Redis Stack
-    to the docker-compose.yml version, and fail CI if Redis integration tests
-    unexpectedly skip.

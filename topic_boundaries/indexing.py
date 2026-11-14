@@ -17,10 +17,7 @@ def open_index(schema_path_str: str | None, redis_url: str, vector_dim: int) -> 
     if schema_path_str:
         schema_path = Path(schema_path_str)
     schema = load_schema_for_dims(schema_path, vector_dim)
-    idx = SearchIndex(schema, redis_url=redis_url)
-    # connect() does not use the constructor's redis_url unless passed explicitly
-    idx.connect(redis_url=redis_url)
-    return idx
+    return SearchIndex(schema, redis_url=redis_url)
 
 
 def records_for_redis(
@@ -65,7 +62,13 @@ def index_clustered_datapoints(
     overwrite_index: bool,
     schema_path: str | None = None,
 ) -> SearchIndex:
-    """Create a Redis index and load datapoints with their vectors and cluster labels."""
+    """Load aligned datapoints, vectors, and labels into a RedisVL index.
+
+    Returns a connected ``SearchIndex``. ``schema_path`` selects a custom
+    schema; its ``embedding`` field dimensions are set from ``vectors``.
+    ``overwrite_index=True`` replaces the index and its stored documents.
+    Invalid IDs, vectors, or labels raise ``ValueError`` before connecting.
+    """
     if (
         vectors.ndim != 2
         or labels.ndim != 1

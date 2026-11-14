@@ -2,7 +2,7 @@
 Extract text from PDFs and split into datapoints for embedding.
 
 The paper proposal mentions LangChain's PyPDFLoader and text splitters; this
-module uses `pypdf` plus a small paragraph/chunk merge step to avoid that
+module uses `pypdf` plus a small paragraph splitter to avoid that
 dependency by default. Install with: pip install -e ".[corpus]"
 """
 
@@ -46,27 +46,20 @@ def chunk_text(
     max_chars: int = DEFAULT_CHUNK_MAX_CHARS,
     overlap: int = DEFAULT_CHUNK_OVERLAP,
 ) -> list[str]:
-    """Prefer paragraph boundaries and overlap successive character windows."""
+    """Keep paragraphs separate; split oversized paragraphs into overlapping windows."""
     if max_chars <= 0 or not 0 <= overlap < max_chars:
         raise ValueError("Require max_chars > 0 and 0 <= overlap < max_chars.")
     text = normalize_whitespace(text)
     chunks: list[str] = []
-    start = 0
-    while start < len(text):
-        end = min(start + max_chars, len(text))
-        if end < len(text):
-            boundary = text.rfind("\n\n", start + overlap + 1, end)
-            if boundary >= 0:
-                end = boundary + 2
-        piece = text[start:end].strip()
-        if piece:
-            chunks.append(piece)
-        if end == len(text):
-            break
-        overlap_end = end
-        while overlap_end > start and text[overlap_end - 1].isspace():
-            overlap_end -= 1
-        start = max(start + 1, overlap_end - overlap) if overlap else end
+    for paragraph in text.split("\n\n"):
+        paragraph = paragraph.strip()
+        for start in range(0, len(paragraph), max_chars - overlap):
+            end = start + max_chars
+            piece = paragraph[start:end].strip()
+            if piece:
+                chunks.append(piece)
+            if end >= len(paragraph):
+                break
     return chunks
 
 

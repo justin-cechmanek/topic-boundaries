@@ -1,5 +1,5 @@
 project = "Topic Boundaries"
-extensions = ["myst_parser", "sphinx_design"]
+extensions = ["myst_parser", "sphinx_design", "sphinx.ext.autodoc"]
 root_doc = "index"
 exclude_patterns = ["_build"]
 

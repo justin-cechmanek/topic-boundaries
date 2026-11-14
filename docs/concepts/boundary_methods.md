@@ -1,8 +1,14 @@
 # Boundary Methods
 
+The diagrams below use a small, original 2D example to explain each question.
+Real text embeddings have many more dimensions; a plotted position is only an
+illustration of the calculation.
+
 ## Max Distance Sort
 
 Ranks each cluster's documents from farthest to nearest relative to that cluster's centroid. Use it for a straightforward list of peripheral documents.
+
+![Two colored clusters with a red line from the first centroid to its farthest member.](../_static/figures/farthest.png)
 
 With a bounded `top_n_per_cluster` and a cosine index, the method queries nearest neighbors of the negated centroid. Cosine distance obeys `d(c, x) = 2 - d(-c, x)` for nonzero vectors. HNSW retrieval can be approximate. With Euclidean or another metric, or when no limit is set, the method scans all matching cluster vectors. Euclidean results are returned as distances.
 
@@ -10,13 +16,19 @@ With a bounded `top_n_per_cluster` and a cosine index, the method queries neares
 
 For each centroid, finds nearby documents tagged as belonging to *other* clusters. Use it to inspect relationships between topics. A hit identifies its source cluster and the neighboring document's cluster. `distance` is cosine distance for a cosine index and Euclidean distance for an L2 index; other configured metrics retain their Redis score.
 
+![A red arrow from one cluster centroid to the nearest document in another cluster.](../_static/figures/cross-boundary.png)
+
 ## Convex Hull
 
 Finds vertices of a convex hull around each cluster after PCA compression. Use it when you want a geometric outline of a cluster. The default maximum hull dimension is 12. For degenerate clusters where Qhull cannot form a hull, the method logs a warning and returns the two extremes along the first principal component.
 
+![A red polygon connects the outer points of one cluster.](../_static/figures/convex-hull.png)
+
 ## Voronoi Boundary
 
 Compares each point's Euclidean distance to its own centroid with its distance to the nearest other centroid. A ratio near 1 suggests the point lies near a K-means decision boundary. This method needs at least two clusters and runs on the in-memory vectors, without another Redis query.
+
+![A highlighted point near the dashed decision boundary has similar distances to two centroids.](../_static/figures/voronoi.png)
 
 ## Centroid Neighbors
 
