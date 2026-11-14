@@ -17,10 +17,7 @@ def open_index(schema_path_str: str | None, redis_url: str, vector_dim: int) -> 
     if schema_path_str:
         schema_path = Path(schema_path_str)
     schema = load_schema_for_dims(schema_path, vector_dim)
-    idx = SearchIndex(schema, redis_url=redis_url)
-    # connect() does not use the constructor's redis_url unless passed explicitly
-    idx.connect(redis_url=redis_url)
-    return idx
+    return SearchIndex(schema, redis_url=redis_url)
 
 
 def records_for_redis(
@@ -52,6 +49,20 @@ def create_and_load(
     id_field: str = "doc_id",
     batch_size: int = 100,
 ) -> None:
+    """Load records only when an existing index has compatible storage and vectors."""
+    if not overwrite and index.exists():
+        existing = SearchIndex.from_existing(index.name, redis_client=index.client)
+        requested_vector = index.schema.fields["embedding"].attrs
+        stored_vector = existing.schema.fields["embedding"].attrs
+        if (
+            any(
+                getattr(requested_vector, attr) != getattr(stored_vector, attr)
+                for attr in ("dims", "datatype", "distance_metric")
+            )
+            or index.schema.index.prefix != existing.schema.index.prefix
+            or index.schema.index.storage_type != existing.schema.index.storage_type
+        ):
+            raise ValueError("Existing index schema does not match the requested schema.")
     index.create(overwrite=overwrite, drop=drop_keys)
     index.load(records, id_field=id_field, batch_size=batch_size)
 
