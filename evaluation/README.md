@@ -1,37 +1,68 @@
 # Boundary-method evaluation
 
-The proposal asks whether geometric edges can surface overlooked ideas. These
-checks separate geometric behavior from that human judgment. Nothing here
-establishes novelty or statistical significance.
+The completed human review is a five-paper pilot on vector search and visual
+retrieval. All five candidates had enough context for the reviewer to assess
+them. Mean boundary relevance and cross-topic value were both 1.8 out of 2,
+and no candidate was marked as noise.
 
-The initial 40-paper review was attempted but could not be completed with the
-two-title cluster context supplied in the sheet. Preserve that sheet and leave
-unjudgeable ratings blank. Follow-up review work is tracked in
-[the human evaluation issue](https://github.com/justin-cechmanek/topic-boundaries/issues/33).
-Tasks and delivery status live in GitHub Issues and the private
-[planning Project](https://github.com/users/justin-cechmanek/projects/1).
+The proposed 40-paper review was abandoned because the supplied cluster
+context was inadequate. It was not completed and will not be carried out.
+There are no remaining ratings to collect for that protocol.
+
+## Completed five-paper pilot
+
+The reviewer was familiar with vector search and computer vision. We collected
+44 unique arXiv papers on vector indexing, visual retrieval, and image-text
+retrieval, then used two clusters with 15 and 29 papers. Three clusters were
+explored first. The two-cluster configuration matched the requested subjects
+and was chosen before any human scores were collected.
+
+Each topic had a name, a description, and three representative-paper summaries
+with original-source links. The representatives excluded all five candidates.
+There was one unique candidate per method or random baseline. The order was
+shuffled, and the method key stayed hidden until all numerical ratings were
+supplied. The exact ratings, paper titles, source links, and setup are recorded
+in [pilot/results.json](pilot/results.json).
+
+| Candidate | Selection method | Boundary relevance (0-2) | Cross-topic value (0-2) | Noise (0-1) |
+| --- | --- | ---: | ---: | ---: |
+| P1 | Random baseline | 2 | 2 | 0 |
+| P2 | Cross-boundary | 2 | 2 | 0 |
+| P3 | Convex hull | 2 | 2 | 0 |
+| P4 | Voronoi | 2 | 1 | 0 |
+| P5 | Max distance | 1 | 2 | 0 |
+
+Boundary relevance measures a meaningful extension beyond the source topic's
+core. A central or unrelated paper scores 0, a plausible peripheral extension
+scores 1, and a clear relevant extension scores 2. Cross-topic value measures
+a useful connection to the comparison topic. No apparent connection scores 0,
+a speculative connection scores 1, and a concrete credible transfer or research
+question scores 2. Noise is 1 for an unusable item and 0 for a usable item.
+Uncertainty is not a zero score or an automatic noise flag.
+
+This pilot shows that the revised context was assessable for this reviewer.
+The random candidate also received the highest scores. With one observation
+per method, these results cannot establish a method ranking, an advantage over
+random selection, statistical significance, or research novelty. The corpus
+and source-topic choices were tailored to reviewer familiarity. Paper summaries
+paraphrased abstracts, and full-paper claims were not independently verified.
+
+## Reproduce the geometry check
 
 Run from the private repository root after installing `pip install -e ".[dev]"`
-and starting Redis Stack. The scripts create uniquely named temporary indexes
-and delete them after each run:
+and starting Redis Stack:
 
 ```bash
 python evaluation/evaluate.py geometry
-python evaluation/evaluate.py sample
 ```
 
-`geometry` writes `round1/geometry.json` with fixed 2D points, the four method
+The command creates a uniquely named temporary index and deletes it when
+finished. It writes `round1/geometry.json` with fixed 2D points, the four method
 outputs, and candidate-set overlap. Ranked methods return their top three
 per cluster, while the unranked hull contributes all of its vertices. The
 `candidate_set_jaccard` values measure intersection size divided by union size.
 The sets can have different sizes. Hull membership is independent of document
-name order. The bridge, outlier, and elongated-cluster cases expose different
-selections. `sample` embeds the committed 100-paper arXiv
-snapshot, then writes 40 unique items to `round1/review_sheet.csv`, eight each
-from max-distance, convex hull, Voronoi, cross-boundary, and a random baseline.
-The order is shuffled. Methods and document IDs stay in `review_key.csv`.
-Do not open the key until ratings are complete. Running `sample` again refuses
-to overwrite the sheet. Choose a new `--output-dir` for another round.
+name order.
 
 In the committed geometric result, max-distance ranks `A-outlier` first and
 the hull includes it. The outlier also shifts the K-means centroid enough that
@@ -39,27 +70,15 @@ the hull includes it. The outlier also shifts the K-means centroid enough that
 within its assigned cluster. This is a concrete sensitivity of this small
 configuration, not evidence that any method finds novel research.
 
-One reviewer fills three columns in `review_sheet.csv` for every item:
+## Historical sampling tools
 
-| Column | 0 | 1 | 2 |
-| --- | --- | --- | --- |
-| `boundary_relevance_0_2` | Unrelated/noisy for the shown cluster context | Plausible peripheral item | Clear edge or bridge |
-| `cross_topic_value_0_2` | No useful connection apparent | Possible follow-up | Compelling cross-topic question |
+The `sample` and `report` commands and `round1/review_sheet.csv`,
+`round1/review_key.csv`, and `round1/metadata.json` belong to the abandoned
+40-paper protocol over the original 100-paper snapshot. They remain as a record
+of that protocol. The sheet is unrated. Those commands cannot regenerate or
+report the completed five-paper pilot, and running them is not a remaining
+review task.
 
-Set `noise_0_1` to `1` for a malformed, irrelevant, or otherwise unusable item,
-and `0` otherwise. Add a short note when a rating needs explanation. The
-source and other cluster cores provide context, not ground-truth labels.
-The other cluster is a comparison topic, not evidence of a useful connection.
-Confirm that the topic context is sufficient before scoring. Uncertainty is
-not a zero rating or an automatic noise flag.
-
-After all 40 items have ratings, run:
-
-```bash
-python evaluation/evaluate.py report
-```
-
-The command writes `round1/results.md` with counts, averages, and noise flags
-by hidden selection method. Read the individual notes as well. One reviewer,
-one small corpus, and eight items per method support descriptive comparison
-only. Keep ratings and the key in the private repository.
+Keep ratings and selection keys in the private repository. Tasks and delivery
+status live in [GitHub Issues](https://github.com/justin-cechmanek/topic-boundaries/issues)
+and the private [planning Project](https://github.com/users/justin-cechmanek/projects/1).

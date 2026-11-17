@@ -133,17 +133,22 @@ def interleave_by_cluster(items: list[Candidate], n_clusters: int) -> list[Candi
     buckets = [[] for _ in range(n_clusters)]
     for item in items:
         buckets[item.source_cluster].append(item)
-    return [item for row in zip_longest(*buckets) for item in row if item is not None]
+    interleaved = []
+    for row in zip_longest(*buckets):
+        for item in row:
+            if item is not None:
+                interleaved.append(item)
+    return interleaved
 
 
 def select_candidates(
-    pools: dict[str, list[Candidate]], n_clusters: int, per_method: int = 8
+    pools: dict[str, list[Candidate]], n_clusters: int, docs_per_method: int = 8
 ) -> list[Candidate]:
     """Select unique documents evenly by method and interleaved by cluster."""
     streams = {method: iter(interleave_by_cluster(pools[method], n_clusters)) for method in METHODS}
     selected: list[Candidate] = []
     used: set[str] = set()
-    for _ in range(per_method):
+    for _ in range(docs_per_method):
         for method in METHODS:
             for item in streams[method]:
                 if item.doc_id not in used:
