@@ -67,38 +67,21 @@ def redis_url() -> str:
     return os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 
-@pytest.fixture
-def make_index(redis_url):
-    """Factory: build a real Redis index from given records; drop it on teardown.
-
-    Skips the test if Redis is unreachable. Serial pytest execution means a fixed
-    index name is safe; each build recreates with overwrite+drop.
-    """
+def make_index(redis_url, doc_ids, bodies, vectors, cluster_labels, dim: int = DIM, schema_path=None):
+    """Load the caller's schema on a disposable Redis instance."""
     redis = pytest.importorskip("redis")
     try:
         redis.from_url(redis_url).ping()
     except Exception:
         pytest.skip("Redis Stack not reachable")
 
-    created = []
-
-    def _make(doc_ids, bodies, vectors, cluster_labels, dim: int = DIM, schema_path=None):
-        vectors = np.asarray(vectors, dtype=np.float32)
-        index = open_index(schema_path, redis_url, dim)
-        records = records_for_redis(
-            list(doc_ids), list(bodies), vectors, np.asarray(cluster_labels)
-        )
-        create_and_load(index, records, overwrite=True, drop_keys=True)
-        created.append(index)
-        return index
-
-    yield _make
-
-    for index in created:
-        try:
-            index.delete(drop=True)
-        except Exception:
-            pass
+    vectors = np.asarray(vectors, dtype=np.float32)
+    index = open_index(schema_path, redis_url, dim)
+    records = records_for_redis(
+        list(doc_ids), list(bodies), vectors, np.asarray(cluster_labels)
+    )
+    create_and_load(index, records, overwrite=True, drop_keys=True)
+    return index
 
 
 # Known geometry: dims 0,1,2 used. Cluster 0 spreads from the x-axis; cluster 1
@@ -116,11 +99,14 @@ CORPUS = {
 
 
 @pytest.fixture
-def loaded_corpus(make_index):
+def loaded_corpus(redis_url):
     """A real index loaded with CORPUS; returns (index, X_centroid)."""
     doc_ids = list(CORPUS)
     labels = [CORPUS[d][0] for d in doc_ids]
     vectors = np.stack([CORPUS[d][1] for d in doc_ids])
     bodies = [f"body of {d}" for d in doc_ids]
-    index = make_index(doc_ids, bodies, vectors, labels)
-    return index, list(X_CENTROID)
+    index = make_index(redis_url, doc_ids, bodies, vectors, labels)
+    try:
+        yield index, list(X_CENTROID)
+    finally:
+        index.delete(drop=True)
