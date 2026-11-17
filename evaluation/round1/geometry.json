@@ -110,14 +110,15 @@
       ]
     }
   },
-  "top3_jaccard": {
-    "max_distance__convex_hull": 0.5,
+  "candidate_set_jaccard": {
+    "max_distance__convex_hull": 0.75,
     "max_distance__voronoi": 0.5,
     "max_distance__cross_boundary": 0.333,
-    "convex_hull__voronoi": 0.5,
-    "convex_hull__cross_boundary": 0.333,
+    "convex_hull__voronoi": 0.556,
+    "convex_hull__cross_boundary": 0.4,
     "voronoi__cross_boundary": 0.5
   },
+  "overlap_selection": "Top three per cluster for ranked methods and all hull vertices.",
   "observations": {
     "A_outlier_ranked_farthest": true,
     "A_outlier_on_hull": true,

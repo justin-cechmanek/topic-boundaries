@@ -7,7 +7,6 @@ import csv
 import json
 import random
 from collections import defaultdict
-from contextlib import contextmanager
 from dataclasses import dataclass
 from itertools import combinations, zip_longest
 from pathlib import Path
@@ -46,9 +45,8 @@ class Candidate:
     source_cluster: int
 
 
-@contextmanager
-def temporary_index(datapoints, vectors, labels, *, metric, settings):
-    """Use a uniquely named index; never overwrite an existing project index."""
+def create_evaluation_index(datapoints, vectors, labels, *, metric, settings):
+    """Create a uniquely named index that the caller deletes when finished."""
     schema = yaml.safe_load(settings.schema_path.read_text(encoding="utf-8"))
     suffix = uuid4().hex[:12]
     schema["index"]["name"] = f"tb_evaluation_{suffix}"
@@ -57,16 +55,12 @@ def temporary_index(datapoints, vectors, labels, *, metric, settings):
     with TemporaryDirectory() as directory:
         path = Path(directory) / "schema.yml"
         path.write_text(yaml.safe_dump(schema), encoding="utf-8")
-        index = index_clustered_datapoints(
+        return index_clustered_datapoints(
             datapoints, vectors, labels,
             redis_url=settings.redis_url,
             schema_path=str(path),
             overwrite_index=True,
         )
-        try:
-            yield index
-        finally:
-            index.delete(drop=True)
 
 
 def geometric_check(output: Path) -> None:
@@ -87,9 +81,12 @@ def geometric_check(output: Path) -> None:
         datapoints, n_clusters=2, embedder=PrecomputedEmbedder()
     )
     settings = Settings.from_config()
-    with temporary_index(datapoints, vectors, labels, metric="l2", settings=settings) as index:
+    index = create_evaluation_index(datapoints, vectors, labels, metric="l2", settings=settings)
+    try:
         farthest = max_distance_rankings(index, centroids, 2, top_n_per_cluster=3)
         cross = cross_boundary_hits_for_all_clusters(index, centroids, 2, k_per_centroid=3)
+    finally:
+        index.delete(drop=True)
     hull = boundary_doc_indices_per_cluster(labels, vectors, 2)
     voronoi = voronoi_rankings(datapoints, vectors, labels, centroids, 2, top_n_per_cluster=3)
 
@@ -112,13 +109,14 @@ def geometric_check(output: Path) -> None:
     assert "A-outlier" in results["convex_hull"][str(a_cluster)]
     overlap = {}
     for left, right in combinations(METHODS[:-1], 2):
-        a = {doc_id for ids in results[left].values() for doc_id in ids[:3]}
-        b = {doc_id for ids in results[right].values() for doc_id in ids[:3]}
+        a = {doc_id for ids in results[left].values() for doc_id in ids}
+        b = {doc_id for ids in results[right].values() for doc_id in ids}
         overlap[f"{left}__{right}"] = round(len(a & b) / len(a | b), 3) if a | b else 0.0
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps({"points": points, "cluster_labels": dict(zip(points, map(int, labels))),
-                    "rankings": results, "top3_jaccard": overlap,
+                    "rankings": results, "candidate_set_jaccard": overlap,
+                    "overlap_selection": "Top three per cluster for ranked methods and all hull vertices.",
                     "observations": {
                         "A_outlier_ranked_farthest": True,
                         "A_outlier_on_hull": True,
@@ -177,9 +175,12 @@ def prepare_review(output: Path) -> None:
         kmeans_n_init=settings.kmeans_n_init,
     )
     n_clusters = len(centroids)
-    with temporary_index(datapoints, vectors, labels, metric="cosine", settings=settings) as index:
+    index = create_evaluation_index(datapoints, vectors, labels, metric="cosine", settings=settings)
+    try:
         farthest = max_distance_rankings(index, centroids, n_clusters)
         cross = cross_boundary_hits_for_all_clusters(index, centroids, n_clusters, k_per_centroid=20)
+    finally:
+        index.delete(drop=True)
     hull = boundary_doc_indices_per_cluster(labels, vectors, n_clusters)
     voronoi = voronoi_rankings(datapoints, vectors, labels, centroids, n_clusters)
 

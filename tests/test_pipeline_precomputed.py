@@ -27,7 +27,7 @@ def _dp(doc_id, vec):
 
 
 @pytest.mark.integration
-def test_index_with_precomputed_vectors(_needs_redis, redis_url, isolated_schema):
+def test_index_with_precomputed_vectors(_needs_redis, redis_url):
     # Two clearly separated clusters in 4-D; no text anywhere.
     dps = [
         _dp("a0", [1.0, 0.0, 0.0, 0.0]),
@@ -46,7 +46,6 @@ def test_index_with_precomputed_vectors(_needs_redis, redis_url, isolated_schema
         labels,
         redis_url=redis_url,
         overwrite_index=True,
-        schema_path=str(isolated_schema()),
     )
     # Passthrough: stored vectors equal the inputs (embedding was skipped).
     assert vectors.shape == (4, 4)

@@ -8,12 +8,9 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from uuid import uuid4
 
 import numpy as np
 import pytest
-import yaml
-from redisvl.index import SearchIndex
 
 from topic_boundaries.indexing import create_and_load, open_index, records_for_redis
 
@@ -70,52 +67,21 @@ def redis_url() -> str:
     return os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 
-@pytest.fixture
-def isolated_schema(tmp_path, redis_url):
-    """Create private index names and key prefixes, and clean up only those indexes."""
-    paths = []
-
-    def _schema(schema_path=None):
-        template = (
-            Path(schema_path) if schema_path
-            else Path(__file__).resolve().parents[1] / "topic_boundaries/schema.yml"
-        )
-        schema = yaml.safe_load(template.read_text(encoding="utf-8"))
-        name = f"tb_test_{uuid4().hex}"
-        schema["index"]["name"] = name
-        schema["index"]["prefix"] = name
-        path = tmp_path / f"{name}.yml"
-        path.write_text(yaml.safe_dump(schema), encoding="utf-8")
-        paths.append(path)
-        return path
-
-    yield _schema
-
-    for path in paths:
-        index = SearchIndex.from_yaml(str(path), redis_url=redis_url)
-        if index.exists():
-            index.delete(drop=True)
-
-
-@pytest.fixture
-def make_index(redis_url, isolated_schema):
-    """Build real indexes with private names; skip when Redis is unreachable."""
+def make_index(redis_url, doc_ids, bodies, vectors, cluster_labels, dim: int = DIM, schema_path=None):
+    """Load the caller's schema on a disposable Redis instance."""
     redis = pytest.importorskip("redis")
     try:
         redis.from_url(redis_url).ping()
     except Exception:
         pytest.skip("Redis Stack not reachable")
 
-    def _make(doc_ids, bodies, vectors, cluster_labels, dim: int = DIM, schema_path=None):
-        vectors = np.asarray(vectors, dtype=np.float32)
-        index = open_index(str(isolated_schema(schema_path)), redis_url, dim)
-        records = records_for_redis(
-            list(doc_ids), list(bodies), vectors, np.asarray(cluster_labels)
-        )
-        create_and_load(index, records, overwrite=True, drop_keys=True)
-        return index
-
-    return _make
+    vectors = np.asarray(vectors, dtype=np.float32)
+    index = open_index(schema_path, redis_url, dim)
+    records = records_for_redis(
+        list(doc_ids), list(bodies), vectors, np.asarray(cluster_labels)
+    )
+    create_and_load(index, records, overwrite=True, drop_keys=True)
+    return index
 
 
 # Known geometry: dims 0,1,2 used. Cluster 0 spreads from the x-axis; cluster 1
@@ -133,11 +99,14 @@ CORPUS = {
 
 
 @pytest.fixture
-def loaded_corpus(make_index):
+def loaded_corpus(redis_url):
     """A real index loaded with CORPUS; returns (index, X_centroid)."""
     doc_ids = list(CORPUS)
     labels = [CORPUS[d][0] for d in doc_ids]
     vectors = np.stack([CORPUS[d][1] for d in doc_ids])
     bodies = [f"body of {d}" for d in doc_ids]
-    index = make_index(doc_ids, bodies, vectors, labels)
-    return index, list(X_CENTROID)
+    index = make_index(redis_url, doc_ids, bodies, vectors, labels)
+    try:
+        yield index, list(X_CENTROID)
+    finally:
+        index.delete(drop=True)
