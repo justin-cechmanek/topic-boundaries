@@ -81,6 +81,9 @@ def index_clustered_datapoints(
     Returns a connected ``SearchIndex``. ``schema_path`` selects a custom
     schema; its ``embedding`` field dimensions are set from ``vectors``.
     ``overwrite_index=True`` replaces the index and its stored documents.
+    Otherwise an existing index must match the requested vector dimensions,
+    datatype, distance metric, key prefix, and storage type. Mismatches raise
+    ``ValueError`` before any records are written.
     Invalid IDs, vectors, or labels raise ``ValueError`` before connecting.
     """
     if (
