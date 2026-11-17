@@ -14,6 +14,8 @@
 
 The bundled `topic_boundaries/schema.yml` defines an HNSW vector index with a `cluster_id` tag and cosine distance. Indexing adjusts the vector field's dimensions to match the vectors. Pass `schema_path` to `index_clustered_datapoints` to load a different schema, including one with Euclidean distance.
 
+Custom schemas must use `FLOAT32` for the `embedding` field, matching the stored vectors and query format. Other vector datatypes are rejected before Redis is contacted.
+
 The distance metric affects the meaning of a score. For example, `max_distance_rankings` reads the configured metric: bounded cosine queries can search from the negated centroid, while Euclidean queries rank all matching cluster vectors and return Euclidean distances.
 Cross-boundary search also converts Redis's squared L2 score to Euclidean
 distance; its cosine scores are cosine distances. `nearest_to_centroid` returns
