@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import make_index
 
 from topic_boundaries.cross_boundary.boundaries import (
     cross_boundary_hits_for_all_clusters,
@@ -23,13 +24,14 @@ def test_excludes_source_cluster_and_orders_nearest_first(loaded_corpus):
 
 
 @pytest.mark.integration
-def test_l2_scores_are_euclidean_distances(make_index, tmp_path):
+def test_l2_scores_are_euclidean_distances(redis_url, tmp_path):
     schema = Path(__file__).resolve().parents[1] / "topic_boundaries" / "schema.yml"
     l2_schema = tmp_path / "l2.yml"
     l2_schema.write_text(
         schema.read_text().replace("distance_metric: cosine", "distance_metric: l2")
     )
     index = make_index(
+        redis_url,
         ["own", "near", "far"],
         ["", "", ""],
         [[1.0, 0.0], [0.0, 0.0], [1.0, 2.0]],
@@ -37,11 +39,14 @@ def test_l2_scores_are_euclidean_distances(make_index, tmp_path):
         dim=2,
         schema_path=str(l2_schema),
     )
-    hits = nearest_outside_cluster(index, source_cluster_id=0, centroid=[1.0, 0.0], k=2)
-    assert [(hit.neighbor_doc_id, hit.distance) for hit in hits] == [
-        ("near", pytest.approx(1.0)),
-        ("far", pytest.approx(2.0)),
-    ]
+    try:
+        hits = nearest_outside_cluster(index, source_cluster_id=0, centroid=[1.0, 0.0], k=2)
+        assert [(hit.neighbor_doc_id, hit.distance) for hit in hits] == [
+            ("near", pytest.approx(1.0)),
+            ("far", pytest.approx(2.0)),
+        ]
+    finally:
+        index.delete(drop=True)
 
 
 @pytest.mark.integration
