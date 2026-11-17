@@ -54,28 +54,22 @@ def datapoint_from_record(rec: dict[str, Any]) -> Datapoint:
     vector = _extract_vector(rec)
     if "abstract" in rec:
         body = str(rec["abstract"])
-        doc_id = str(
-            rec.get("arxiv_link")
-            or rec.get("title")
-            or rec.get("doc_id")
-            or ""
-        )
+        id_keys = ("arxiv_link", "title", "doc_id")
     elif "body" in rec:
         body = str(rec["body"])
-        doc_id = str(
-            rec.get("doc_id")
-            or rec.get("id")
-            or rec.get("arxiv_link")
-            or ""
-        )
+        id_keys = ("doc_id", "id", "arxiv_link")
     elif vector is not None:
         body = ""  # vector-only record: nothing to embed
-        doc_id = str(rec.get("doc_id") or rec.get("id") or rec.get("title") or "")
+        id_keys = ("doc_id", "id", "title")
     else:
         raise ValueError(
             "Each record needs an 'abstract', 'body', or precomputed "
             "'vector'/'embedding' field."
         )
+    doc_id = next(
+        (str(rec[key]) for key in id_keys if rec.get(key) is not None and rec[key] != ""),
+        "",
+    )
     if not doc_id:
         raise ValueError("Could not infer doc_id; add doc_id or arxiv_link or title.")
     meta = {k: v for k, v in rec.items() if k not in ("body", "abstract", *_VECTOR_KEYS)}
