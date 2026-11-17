@@ -13,8 +13,7 @@ on:
 # execute here. The in-test skips (importorskip, Redis-unreachable) remain so
 # local runs without those extras still pass.
 #
-# REDIS_URL prefers the managed cloud Redis secret when set; otherwise it points
-# at the service container below, so integration tests run even on forks.
+# REDIS_URL points at each job's disposable service container.
 
 jobs:
   test:
@@ -30,9 +29,7 @@ jobs:
       # umap-learn's numba backend needs a writable cache dir, else it errors
       # with "no locator available" on some runners.
       NUMBA_CACHE_DIR: ${{ github.workspace }}/numba_cache
-      # Prefer the managed cloud Redis secret; otherwise use the service below so
-      # the integration tests run (not skip) even on forks / without the secret.
-      REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379/0' }}
+      REDIS_URL: redis://localhost:6379/0
 
     # Redis Stack (RediSearch) so the vector-index integration tests actually run.
     services:

@@ -1,8 +1,9 @@
 # Contributing to Topic Boundaries
 
 The code repository is private and retains its existing [MIT license](LICENSE).
-Keep source, datasets, evaluation ratings, and selection keys private. Only
-generated documentation and assets belong in the separate public docs mirror.
+Keep source and datasets private. Keep evaluation ratings, selection keys, and
+research records in private Issues or local artifacts. Only generated
+documentation and assets belong in the separate public docs mirror.
 Follow [.github/DOCS_PUBLISHING.md](.github/DOCS_PUBLISHING.md) and publish only
 after the matching changes merge and publication is authorized.
 
@@ -37,6 +38,8 @@ measures. Geometric boundaries alone do not establish novelty or usefulness.
   publication, and merging need authorization.
 - Make the smallest complete change using existing code and tools. Avoid
   speculative frameworks, extra backends, and custom automation without a need.
+- Prefer plain helper functions and explicit cleanup over nested function
+  factories and custom context-manager decorators.
 - Trace callers and examples before removing code or changing public interfaces.
   Update affected callers, tests, fixtures, exports, configuration, and docs
   together. Removing an example does not prove shared code is unused.
@@ -54,13 +57,14 @@ and responsibility planning live in Issues.
 Keep one-off research in its issue. Summarize what we tested, learned, and decided
 at the top, then link detailed results, environment information, and historical
 experiment code. Maintain scripts or guides only when we expect to reuse them.
-Put feature tests in the implementation pull request. An investigation can be
+Put package-code tests in the implementation pull request. An investigation can be
 reviewed in its issue without a code merge.
 
 Make superseded decisions clear when revising scope. Distinguish current
 behavior, proposals, and untested targets. Never count skipped checks as passes.
-Follow [evaluation/README.md](evaluation/README.md) for blinded human review.
-Report descriptive results and limits without unsupported significance claims.
+Follow [evaluation/README.md](evaluation/README.md) to run and interpret the
+geometry check. Keep human-review protocols and results in their Issues and
+report descriptive results and limits without unsupported significance claims.
 
 Write descriptions, issues, documentation, and review replies for someone who
 understands software but has not followed this project:
@@ -134,7 +138,8 @@ may skip when services, models, or extras are unavailable. Report those skips.
 
 For prose-only work, check the text and build affected documentation with warnings
 as errors. Do not add tests that merely mirror a trivial edit. Package code needs
-meaningful tests. Validate changed standalone scripts directly and record results.
+meaningful tests. Validate standalone scripts directly instead of adding
+script-only test files, and record the results in the Issue or PR.
 Evaluation results must distinguish geometric behavior from human judgments of
 usefulness.
 
