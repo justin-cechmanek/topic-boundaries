@@ -26,18 +26,17 @@ def boundary_highlight_indices(
 
     Every result item carries the document's ``doc_id`` (see
     ``write_boundary_results``), so matching is a doc_id lookup regardless of
-    method — centroid_neighbors nests under ``clusters``, the rest under
-    ``boundary_by_cluster``.
+    method. Legacy centroid-neighbor files nest under ``clusters``; the writer
+    uses ``boundary_by_cluster`` for every method.
     """
     doc_ids: set[str] = set()
     if str(results.get("method") or "") == "centroid_neighbors":
         for c in results.get("clusters") or []:
             for row in c.get("nearest_to_centroid") or []:
                 doc_ids.add(str(row.get("doc_id") or ""))
-    else:
-        for cluster_list in results.get("boundary_by_cluster") or []:
-            for item in cluster_list:
-                doc_ids.add(str(item.get("doc_id") or ""))
+    for cluster_list in results.get("boundary_by_cluster") or []:
+        for item in cluster_list:
+            doc_ids.add(str(item.get("doc_id") or ""))
     doc_ids.discard("")
     return {i for i, d in enumerate(datapoints) if d.doc_id in doc_ids}
 
