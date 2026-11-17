@@ -9,10 +9,11 @@ def test_normalize_whitespace_collapses_line_noise():
     assert normalize_whitespace("  a  \n\n  b\tc ") == "a\n\nb c"
 
 
-def test_chunk_respects_paragraph_boundaries():
+@pytest.mark.parametrize("overlap", [0, 6])
+def test_chunk_respects_paragraph_boundaries(overlap):
     text = "para one.\n\npara two is here.\n\npara three."
-    chunks = chunk_text(text, max_chars=30, overlap=0)
-    assert chunks == ["para one.\n\npara two is here.", "para three."]
+    chunks = chunk_text(text, max_chars=30, overlap=overlap)
+    assert chunks == ["para one.", "para two is here.", "para three."]
 
 
 def test_oversized_paragraph_hard_split_with_overlap():
@@ -26,12 +27,21 @@ def test_oversized_paragraph_hard_split_with_overlap():
     assert sum(len(c) for c in chunks) < 2 * len(para)
 
 
-def test_overlap_applies_between_paragraph_chunks():
-    text = "alpha beta gamma.\n\ndelta epsilon zeta.\n\neta theta iota."
-    chunks = chunk_text(text, max_chars=35, overlap=6)
-    assert len(chunks) > 1
-    assert all(len(c) <= 35 for c in chunks)
-    assert chunks[0][-6:] in chunks[1]
+def test_overlap_stays_within_an_oversized_paragraph():
+    chunks = chunk_text("abcdefghijABCDEFGHIJ\n\nnext.", max_chars=12, overlap=4)
+    assert chunks == ["abcdefghijAB", "ijABCDEFGHIJ", "next."]
+
+
+def test_exact_length_paragraphs_do_not_repeat_their_tails():
+    assert chunk_text("abcde\n\nvwxyz", max_chars=5, overlap=4) == ["abcde", "vwxyz"]
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [("", []), (" \t\n \n", []), ("\nfirst\nline\n \n\nsecond\n\n", ["first\nline", "second"])],
+)
+def test_blank_paragraphs_are_ignored_and_single_newlines_are_preserved(text, expected):
+    assert chunk_text(text) == expected
 
 
 @pytest.mark.parametrize("max_chars, overlap", [(0, 0), (10, -1), (10, 10)])
@@ -55,7 +65,8 @@ def test_project_proposal_pdf_chunks(pdf_name: str):
     # ~2.5k chars of extractable text; 500-char chunks give several real chunks.
     dps = pdf_to_datapoints(pdf, max_chars=500)
     assert len(dps) >= 5
-    assert all(len(d.body) > 50 for d in dps[:3])
+    assert all(0 < len(d.body) <= 500 for d in dps)
+    assert any(len(d.body) > 50 for d in dps)
     # doc_id format "{stem}#chunk{i}" and per-chunk meta.
     stem = pdf.stem
     assert dps[0].doc_id == f"{stem}#chunk0"
