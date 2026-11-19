@@ -108,6 +108,8 @@ def index_clustered_datapoints(
         raise ValueError("Expected finite numeric vectors before indexing.")
     if not np.issubdtype(labels.dtype, np.integer) or (labels < 0).any():
         raise ValueError("Expected nonnegative integer cluster labels before indexing.")
+    if any(not isinstance(d.body, str) for d in datapoints):
+        raise ValueError("Expected string document bodies before indexing.")
     index = open_index(schema_path, redis_url, int(vectors.shape[1]))
     records = records_for_redis(
         doc_ids,
