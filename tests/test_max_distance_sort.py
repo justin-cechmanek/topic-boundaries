@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import make_index
 
 from topic_boundaries.max_distance_sort.boundaries import (
     boundary_rankings_for_all_clusters,
@@ -44,7 +45,7 @@ def test_top_n_farthest_query_matches_exhaustive_scan(loaded_corpus):
 
 
 @pytest.mark.integration
-def test_l2_top_n_ranks_by_distance_from_centroid(make_index, tmp_path):
+def test_l2_top_n_ranks_by_distance_from_centroid(redis_url, tmp_path):
     schema = Path(__file__).resolve().parents[1] / "topic_boundaries" / "schema.yml"
     l2_schema = tmp_path / "l2.yml"
     l2_schema.write_text(
@@ -52,16 +53,20 @@ def test_l2_top_n_ranks_by_distance_from_centroid(make_index, tmp_path):
     )
     centroid = np.array([1.0, 0.0], dtype=np.float32)
     index = make_index(
+        redis_url,
         ["near", "far"], ["", ""], [[0.5, 0.0], [3.0, 0.0]], [0, 0],
         dim=2, schema_path=str(l2_schema),
     )
 
-    hits = furthest_from_centroid(index, 0, centroid, top_n=1)
-    assert [(hit.doc_id, hit.distance) for hit in hits] == [("far", pytest.approx(2.0))]
-    all_hits = furthest_from_centroid(index, 0, centroid)
-    assert [(hit.doc_id, hit.distance) for hit in all_hits] == [
-        ("far", pytest.approx(2.0)), ("near", pytest.approx(0.5)),
-    ]
+    try:
+        hits = furthest_from_centroid(index, 0, centroid, top_n=1)
+        assert [(hit.doc_id, hit.distance) for hit in hits] == [("far", pytest.approx(2.0))]
+        all_hits = furthest_from_centroid(index, 0, centroid)
+        assert [(hit.doc_id, hit.distance) for hit in all_hits] == [
+            ("far", pytest.approx(2.0)), ("near", pytest.approx(0.5)),
+        ]
+    finally:
+        index.delete(drop=True)
 
 
 @pytest.mark.integration

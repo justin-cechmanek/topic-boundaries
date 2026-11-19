@@ -9,7 +9,7 @@ import yaml
 # Chunking. NOTE: keep max_chars under the embedding model's max input length or
 # the model silently truncates. all-MiniLM-L6-v2 caps at 256 tokens (~1000
 # chars), so 1500 already truncates a little — lower it for that model, or raise
-# it for long-context embedders. overlap keeps context across chunk edges.
+# it for long-context embedders. Overlap stays within oversized paragraphs.
 DEFAULT_CHUNK_MAX_CHARS = 1500
 DEFAULT_CHUNK_OVERLAP = 200
 
