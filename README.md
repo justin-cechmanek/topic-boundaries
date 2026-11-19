@@ -6,10 +6,6 @@ This project allows you to identify the specific content at the edges of topics 
 
 A **topic boundary** is the set of datapoints (ideas, statements, concepts) that exist at the periphery of our understanding of a specific field of knowledge. It is the edge—or boundary—of our knowledge of a subject. This is generally where new research and innovation is focused. If we consider a specific field of knowledge we can assume the centroid of that field is well explored, so it follows that the remaining interesting areas of future discovery and innovation exist further away. This repository is a collection of tools and methods that attempts to formally quantify and identify these boundaries using multiple different techniques.
 
-This is the project's research hypothesis. A geometric boundary alone does not
-establish that an idea is novel or useful; see the
-[original proposal](knowledge_boundaries_paper_proposal.pdf).
-
 The library loads documents or existing vectors, clusters them with K-means,
 and offers four boundary methods. Some methods use a Redis vector index; others
 work directly on the vectors in memory.
@@ -115,3 +111,12 @@ https://justin-cechmanek.github.io/topic-boundaries-docs/. Only generated docs
 are published there; the package repository remains private. Start with
 [Getting Started](docs/user_guide/getting_started.md) or the
 [Examples](docs/examples/index.md) and [API Reference](docs/api/index.md).
+
+## Contributing and task tracking
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and
+verification requirements. Track task scope, acceptance criteria, research, and
+progress in [GitHub Issues](https://github.com/justin-cechmanek/topic-boundaries/issues).
+The private [Topic Boundaries Project](https://github.com/users/justin-cechmanek/projects/1)
+holds delivery order and status. Keep plans and handoffs there instead of a
+local TODO file.

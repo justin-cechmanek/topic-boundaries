@@ -104,7 +104,7 @@ def test_textdir_source_chunks_files(tmp_path):
     (tmp_path / "a.txt").write_text("alpha paragraph.\n\nbeta paragraph.", encoding="utf-8")
     (tmp_path / "b.txt").write_text("gamma content here.", encoding="utf-8")
     dps = TextDirSource(tmp_path, max_chars=20, overlap=0).load()
-    assert len(dps) >= 3  # a.txt splits into >=2, b.txt >=1
+    assert [d.body for d in dps] == ["alpha paragraph.", "beta paragraph.", "gamma content here."]
     assert all("#chunk" in d.doc_id for d in dps)
     assert all(d.meta["source_file"].endswith(".txt") for d in dps)
     assert any(d.doc_id.startswith("a.txt") for d in dps)
@@ -119,18 +119,15 @@ def test_textdir_source_covers_markdown(tmp_path):
     dps = TextDirSource(tmp_path, max_chars=200, overlap=0).load()
     prefixes = {d.doc_id.split("#")[0] for d in dps}
     assert prefixes == {"a.txt", "b.md"}
-    md_body = next(d.body for d in dps if d.doc_id.startswith("b.md"))
-    # heading marker and code-fence markers stripped; heading + code text kept
-    assert "#" not in md_body
-    assert "```" not in md_body
-    assert "Title" in md_body and "code = 1" in md_body
+    md_bodies = [d.body for d in dps if d.doc_id.startswith("b.md")]
+    assert md_bodies == ["Title", "Body paragraph.", "code = 1"]
 
 
 def test_textfile_source_single_txt_and_md(tmp_path):
     txt = tmp_path / "note.txt"
     txt.write_text("one paragraph.\n\ntwo paragraph.", encoding="utf-8")
-    dps = TextFileSource(txt, max_chars=15, overlap=0).load()
-    assert len(dps) >= 2
+    dps = TextFileSource(txt).load()
+    assert [d.body for d in dps] == ["one paragraph.", "two paragraph."]
     assert dps[0].doc_id == "note#chunk0"
     assert dps[0].meta["source_file"].endswith("note.txt")
 

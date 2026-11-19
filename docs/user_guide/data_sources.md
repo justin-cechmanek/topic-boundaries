@@ -39,4 +39,15 @@ for a complete clustering, schema, and indexing workflow.
 
 ## Text and PDF chunks
 
-Text, Markdown, and PDF loaders split long content into datapoints. `max_chars` and `overlap` control chunk size and context overlap. Each chunk has its source path and chunk index in `meta`. Markdown headings and fence markers are removed before chunking; code inside the fences is retained.
+Text, Markdown, and PDF loaders create one chunk per paragraph, using blank lines
+as paragraph separators. A single line break stays within its paragraph. A
+paragraph longer than `max_chars` is split into smaller chunks, with `overlap`
+characters of context between them. Overlap never crosses into another paragraph.
+Empty paragraphs are ignored.
+
+Each chunk has its source path and chunk index in `meta`. Markdown headings and
+fence markers are removed before chunking. Code inside the fences is retained.
+
+Paragraph-based chunking changes chunk counts and numbered document IDs compared
+with the previous paragraph-packing behavior. Rebuild an existing corpus from
+its source files when switching to this behavior.
